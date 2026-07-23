@@ -5,7 +5,7 @@ summary: 첫 성취. 진짜 인터넷 주소가 생긴 날.
 종류: 사례
 주차: 1
 프로젝트: my-first-project
-공개: true
+공개: false
 tags: ["git", "배포"]
 ---
 
