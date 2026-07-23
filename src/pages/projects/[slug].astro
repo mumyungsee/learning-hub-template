@@ -1,0 +1,91 @@
+---
+import Base from '../../layouts/Base.astro';
+import Prose from '../../components/Prose.astro';
+import { getProjects, getCasesOf } from '../../lib/content';
+
+export async function getStaticPaths() {
+  const projects = await getProjects();
+  return projects.map((p) => ({ params: { slug: p.slug }, props: { entry: p } }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await entry.render();
+const cases = await getCasesOf(entry.slug);
+const fmt = (d: Date) => d.toISOString().slice(0, 10);
+const 완성 = entry.data.status === '완성';
+---
+
+<Base title={entry.data.title} description={entry.data.summary}>
+  <a href="/projects" class="back-link">← 프로젝트 목록</a>
+
+  <header class="head">
+    <span class:list={['badge', entry.data.status]}>{entry.data.status}</span>
+    <h1 class="page-title">{entry.data.title}</h1>
+    {entry.data.summary && <p class="lead">{entry.data.summary}</p>}
+    <div class="meta">
+      시작 {fmt(entry.data.date)}
+      {entry.data.tags && entry.data.tags.length > 0 && (
+        <span> · {entry.data.tags.map((t) => `#${t}`).join(' ')}</span>
+      )}
+    </div>
+    {entry.data.링크 && (
+      <a class="cta" href={entry.data.링크} target="_blank" rel="noopener noreferrer">
+        {완성 ? '완성작 보러가기 →' : '체험해보기 →'}
+      </a>
+    )}
+  </header>
+
+  <Prose>
+    <Content />
+  </Prose>
+
+  <!-- 이 프로젝트에 엮인 사례글 연재 -->
+  {cases.length > 0 && (
+    <section class="series">
+      <h2>작업 기록</h2>
+      <ol>
+        {cases.map((c, i) => (
+          <li>
+            <a href={`/wiki/${c.slug}`}>
+              <span class="num">{String(i + 1).padStart(2, '0')}</span>
+              <span class="body">
+                <strong>{c.data.title}</strong>
+                {c.data.summary && <span class="summary">{c.data.summary}</span>}
+                <span class="date">{fmt(c.data.date)}</span>
+              </span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  )}
+</Base>
+
+<style>
+  .head { margin-bottom: 2rem; }
+  .head .page-title { margin: 0.6rem 0 0.4rem; }
+  .head .lead { color: var(--muted); font-size: 1.05rem; margin: 0 0 0.6rem; }
+  .head .meta { font-size: 0.82rem; color: var(--muted); }
+  .cta {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: 0.55rem 1.1rem;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-decoration: none;
+  }
+  .cta:hover { opacity: 0.85; }
+
+  .series { margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--line); }
+  .series h2 { font-size: 1.25rem; margin: 0 0 1rem; }
+  .series ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.75rem; }
+  .series a { display: flex; gap: 1rem; padding: 0.9rem 1rem; border: 1px solid var(--line); border-radius: var(--radius); text-decoration: none; }
+  .series a:hover { border-color: var(--muted); }
+  .series .num { font-size: 1.4rem; font-weight: 700; color: var(--line); }
+  .series .body { display: flex; flex-direction: column; }
+  .series .summary { color: var(--muted); font-size: 0.9rem; }
+  .series .date { font-size: 0.78rem; color: var(--muted); margin-top: 0.2rem; }
+</style>

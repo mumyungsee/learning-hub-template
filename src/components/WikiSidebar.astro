@@ -1,0 +1,107 @@
+---
+// 위키 좌측 목록 — 로드맵(맨 위) + 주차별로 글이 쌓여.
+// 챌린지를 진행할수록 여기가 세로로 길어지면서 "위키가 자란다".
+import { getWikiGrouped } from '../lib/content';
+
+export interface Props {
+  activeSlug?: string;   // 지금 보고 있는 글 (좌측에서 강조 표시)
+}
+const { activeSlug } = Astro.props;
+const { roadmap, weeks } = await getWikiGrouped();
+
+const 종류표시: Record<string, string> = { 로드맵: '지도', 개념: '개념', 사례: '사례', 회고: '회고' };
+---
+
+<aside class="wiki-side">
+  <a href="/wiki" class="side-home">학습위키</a>
+
+  {roadmap.map((r) => (
+    <a href={`/wiki/${r.slug}`} class:list={['road', { active: r.slug === activeSlug }]}>
+      <span class="pin">지도</span>{r.data.title}
+    </a>
+  ))}
+
+  {weeks.map(({ 주차, items }) => (
+    <section class="wk">
+      <h3>{주차 > 0 ? `${주차}주차` : '기타'}</h3>
+      <ul>
+        {items.map((e) => (
+          <li>
+            <a href={`/wiki/${e.slug}`} class:list={{ active: e.slug === activeSlug }}>
+              <span class:list={['kind', e.data.종류]}>{종류표시[e.data.종류]}</span>
+              <span class="t">{e.data.title}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  ))}
+</aside>
+
+<style>
+  .wiki-side {
+    font-size: 0.88rem;
+    line-height: 1.5;
+  }
+  .side-home {
+    display: block;
+    font-weight: 700;
+    font-size: 1rem;
+    text-decoration: none;
+    margin-bottom: 1rem;
+    color: var(--fg);
+  }
+  .road {
+    display: block;
+    text-decoration: none;
+    color: var(--fg);
+    padding: 0.45rem 0.6rem;
+    border-radius: 8px;
+    background: var(--surface);
+    margin-bottom: 1rem;
+    font-weight: 600;
+  }
+  .road:hover, .road.active { outline: 2px solid var(--accent); }
+  .pin {
+    font-size: 0.68rem;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 4px;
+    padding: 0.05rem 0.35rem;
+    margin-right: 0.4rem;
+  }
+
+  .wk { margin-bottom: 1.3rem; }
+  .wk h3 {
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-transform: none;
+    margin: 0 0 0.4rem;
+    padding-bottom: 0.2rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .wk ul { list-style: none; margin: 0; padding: 0; }
+  .wk li { margin: 0.1rem 0; }
+  .wk a {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    text-decoration: none;
+    color: var(--fg);
+    padding: 0.3rem 0.5rem;
+    border-radius: 6px;
+  }
+  .wk a:hover { background: var(--surface); }
+  .wk a.active { background: var(--surface); font-weight: 600; }
+  .wk .t { flex: 1; min-width: 0; }
+  .kind {
+    font-size: 0.66rem;
+    padding: 0.02rem 0.32rem;
+    border-radius: 4px;
+    white-space: nowrap;
+    color: var(--muted);
+    border: 1px solid var(--line);
+  }
+  .kind.개념 { color: var(--amber-fg); border-color: var(--amber-bg); background: var(--amber-bg); }
+  .kind.회고 { color: var(--green-fg); border-color: var(--green-bg); background: var(--green-bg); }
+</style>

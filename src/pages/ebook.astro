@@ -1,0 +1,171 @@
+---
+import Base from '../layouts/Base.astro';
+import { site } from '../config/site';
+import { getWikiGrouped } from '../lib/content';
+
+// 전자책 = 학습위키를 그대로 책으로 묶은 것.
+//   로드맵 = 서문(전체 지도) / 주차별 = 챕터 (개념 → 사례 → 회고)
+const { roadmap, weeks } = await getWikiGrouped();
+
+// 각 글 본문을 미리 렌더
+const renderEntry = async (e: any) => {
+  const { Content } = await e.render();
+  return { data: e.data, slug: e.slug, Content };
+};
+const 서문 = await Promise.all(roadmap.map(renderEntry));
+const 챕터들 = await Promise.all(
+  weeks.map(async (w) => ({ 주차: w.주차, items: await Promise.all(w.items.map(renderEntry)) })),
+);
+
+const total = 서문.length + 챕터들.reduce((n, w) => n + w.items.length, 0);
+const fmt = (d: Date) => d.toISOString().slice(0, 10);
+const 오늘 = new Date().toISOString().slice(0, 10);
+const 종류표시: Record<string, string> = { 개념: '개념', 사례: '사례', 회고: '회고' };
+---
+
+<Base title="전자책" wide>
+  <div class="ebook-head">
+    <div>
+      <h1 class="page-title">{site.이름} — 학습 전자책</h1>
+      <p class="page-desc">학습위키를 책으로 묶었어요. 로드맵이 서문, 주차가 챕터예요. 지금 {total}꼭지.</p>
+    </div>
+    <div class="actions">
+      <button id="download-btn" class="btn primary">전자책 내려받기</button>
+      <button id="print-btn" class="btn">PDF로 저장 (인쇄)</button>
+    </div>
+  </div>
+
+  {total === 0 ? (
+    <div class="empty">위키가 쌓이면 여기서 한 권의 책이 돼요. 로드맵부터 만들어보세요.</div>
+  ) : (
+    <div id="book">
+      <!-- 표지 -->
+      <section class="cover">
+        <h1>{site.이름}</h1>
+        <p class="sub">AI와 함께한 한 달의 학습 기록</p>
+      </section>
+
+      <!-- 서문 = 로드맵 -->
+      {서문.map((r) => {
+        const C = r.Content;
+        return (
+          <section class="part preface">
+            <div class="part-label">서문 · 전체 지도</div>
+            <h2>{r.data.title}</h2>
+            <div class="prose"><C /></div>
+          </section>
+        );
+      })}
+
+      <!-- 목차 -->
+      <nav class="toc">
+        <h2>목차</h2>
+        {챕터들.map(({ 주차, items }) => (
+          <div class="toc-week">
+            <strong>{주차 > 0 ? `${주차}주차` : '기타'}</strong>
+            <ul>
+              {items.map((e) => <li>{e.data.title}</li>)}
+            </ul>
+          </div>
+        ))}
+      </nav>
+
+      <!-- 주차별 챕터 -->
+      {챕터들.map(({ 주차, items }) => (
+        <div class="part chapter-part">
+          <div class="chapter-cover">
+            <div class="part-label">Chapter</div>
+            <h2>{주차 > 0 ? `${주차}주차` : '기타'}</h2>
+          </div>
+          {items.map((e) => {
+            const C = e.Content;
+            return (
+              <section class="section">
+                <div class="sec-kind">{종류표시[e.data.종류] ?? e.data.종류}</div>
+                <h3>{e.data.title}</h3>
+                <div class="sec-date">{fmt(e.data.date)}</div>
+                <div class="prose"><C /></div>
+              </section>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  )}
+</Base>
+
+<style>
+  .ebook-head {
+    display: flex; flex-wrap: wrap; align-items: flex-end;
+    justify-content: space-between; gap: 1rem; margin-bottom: 2rem;
+  }
+  .actions { display: flex; gap: 0.5rem; }
+  .btn {
+    padding: 0.5rem 1rem; border-radius: 999px; border: 1px solid var(--line);
+    background: #fff; font-size: 0.88rem; cursor: pointer; font-family: inherit;
+  }
+  .btn:hover { border-color: var(--muted); }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn.primary:hover { opacity: 0.85; }
+
+  #book { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+
+  .cover { text-align: center; padding: 4rem 2rem; background: var(--surface); border-bottom: 1px solid var(--line); }
+  .cover h1 { font-size: 2.2rem; margin: 0 0 0.5rem; }
+  .cover .sub { color: var(--muted); margin: 0; }
+
+  .part-label { font-size: 0.74rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+  .preface { padding: 2.5rem 2rem; border-bottom: 1px solid var(--line); background: #fbfaf9; }
+  .preface > h2 { margin: 0.3rem 0 1rem; font-size: 1.5rem; border: none; }
+
+  .toc { padding: 2rem; border-bottom: 1px solid var(--line); }
+  .toc > h2 { margin-top: 0; }
+  .toc-week { margin-bottom: 0.8rem; }
+  .toc-week ul { margin: 0.2rem 0 0; padding-left: 1.2rem; color: var(--muted); }
+
+  .chapter-cover {
+    padding: 2rem; text-align: center;
+    background: var(--surface); border-bottom: 1px solid var(--line);
+  }
+  .chapter-cover h2 { margin: 0.2rem 0 0; font-size: 1.7rem; border: none; }
+
+  .section { padding: 2.2rem 2rem; border-bottom: 1px solid var(--line); }
+  .section:last-child { border-bottom: none; }
+  .sec-kind { font-size: 0.74rem; color: var(--muted); }
+  .section > h3 { margin: 0.2rem 0 0.2rem; font-size: 1.3rem; }
+  .sec-date { font-size: 0.76rem; color: var(--muted); margin-bottom: 1rem; }
+
+  @media print {
+    .ebook-head, header, footer { display: none !important; }
+    #book { border: none; }
+    .cover, .toc, .chapter-cover, .preface { page-break-after: always; }
+    .section { page-break-before: always; }
+  }
+</style>
+
+<script define:vars={{ bookTitle: site.이름, 오늘 }}>
+  const btn = document.getElementById('download-btn');
+  btn?.addEventListener('click', () => {
+    const book = document.getElementById('book');
+    if (!book) return;
+    let css = '';
+    for (const sheet of Array.from(document.styleSheets)) {
+      try { for (const rule of Array.from(sheet.cssRules)) css += rule.cssText + '\n'; }
+      catch { /* 외부 시트 건너뜀 */ }
+    }
+    const html = `<!doctype html>
+<html lang="ko"><head><meta charset="utf-8">
+<title>${bookTitle} — 학습 전자책</title>
+<style>${css}
+body{max-width:760px;margin:0 auto;padding:2rem;font-family:-apple-system,'Malgun Gothic',sans-serif;line-height:1.7;}
+</style></head><body>${book.outerHTML}</body></html>`;
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${bookTitle}-학습전자책-${오늘}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+  document.getElementById('print-btn')?.addEventListener('click', () => window.print());
+</script>

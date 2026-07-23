@@ -1,0 +1,70 @@
+---
+import { site } from '../config/site';
+
+// 상단 메뉴. 학습허브의 4개 방(학습자료·프로젝트·사례글)으로 이동.
+// (저널은 개인용이라 메뉴에 안 넣음)
+const nav = [
+  { href: '/', label: '홈' },
+  { href: '/wiki', label: '학습위키' },
+  { href: '/projects', label: '프로젝트' },
+  { href: '/ebook', label: '전자책' },
+];
+
+const path = Astro.url.pathname;
+const isActive = (href: string) =>
+  href === '/' ? path === '/' : path.startsWith(href);
+---
+
+<header class="site-header">
+  <a href="/" class="brand">{site.이름}</a>
+  <nav class="nav">
+    {nav.map((n) => (
+      <a href={n.href} class:list={['nav-link', { active: isActive(n.href) }]}>
+        {n.label}
+      </a>
+    ))}
+  </nav>
+</header>
+
+<style>
+  .site-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    height: var(--header-height);
+    padding: 0 1.25rem;
+    border-bottom: 1px solid var(--line);
+    background: var(--bg);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .brand {
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--fg);
+    text-decoration: none;
+  }
+  .nav {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+  }
+  .nav-link {
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    color: var(--muted);
+    text-decoration: none;
+  }
+  .nav-link:hover {
+    color: var(--fg);
+    background: var(--surface);
+  }
+  .nav-link.active {
+    color: var(--fg);
+    background: var(--surface);
+    font-weight: 600;
+  }
+</style>

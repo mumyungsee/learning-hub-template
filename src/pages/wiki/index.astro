@@ -1,0 +1,64 @@
+---
+import WikiLayout from '../../layouts/WikiLayout.astro';
+import { getWikiGrouped } from '../../lib/content';
+
+const { roadmap, weeks } = await getWikiGrouped();
+const total = weeks.reduce((n, w) => n + w.items.length, 0) + roadmap.length;
+const 첫글 = roadmap[0] ?? weeks[0]?.items[0];
+---
+
+<WikiLayout title="학습위키" description="한 달 동안 배운 것이 주차별로 쌓이는 위키">
+  <div class="intro">
+    <h1 class="page-title">학습위키</h1>
+    <p class="page-desc">
+      배운 것이 주차별로 여기 쌓여요. 지금까지 <strong>{total}개</strong> 글이 모였어요.
+      왼쪽 목록에서 글을 고르면 이 자리에 본문이 열려요.
+    </p>
+
+    {total === 0 ? (
+      <div class="empty">
+        아직 비어 있어요. <br />
+        1주차에 <strong>로드맵</strong>(한 달 전체 지도)부터 만들면 위키의 뼈대가 생겨요.
+      </div>
+    ) : (
+      <>
+        {첫글 && (
+          <a href={`/wiki/${첫글.slug}`} class="start-btn">
+            {roadmap[0] ? '로드맵부터 보기 →' : '첫 글부터 보기 →'}
+          </a>
+        )}
+        <div class="weeks-preview">
+          {weeks.map(({ 주차, items }) => (
+            <div class="wk-card">
+              <div class="wk-num">{주차 > 0 ? `${주차}주차` : '기타'}</div>
+              <div class="wk-count">{items.length}개 글</div>
+            </div>
+          ))}
+        </div>
+      </>
+    )}
+  </div>
+</WikiLayout>
+
+<style>
+  .start-btn {
+    display: inline-block;
+    margin: 0.5rem 0 2rem;
+    padding: 0.55rem 1.2rem;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .start-btn:hover { opacity: 0.85; }
+  .weeks-preview { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+  .wk-card {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 0.9rem 1.2rem;
+    min-width: 100px;
+  }
+  .wk-num { font-weight: 700; }
+  .wk-count { font-size: 0.82rem; color: var(--muted); }
+</style>

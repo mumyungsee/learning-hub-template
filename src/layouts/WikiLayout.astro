@@ -1,0 +1,68 @@
+---
+// 위키 3단 레이아웃: 좌(주차별 목록) / 중앙(본문) / 우(세부 목차)
+// 목록 페이지와 글 상세 페이지가 이 레이아웃을 공유해서, 어느 글을 봐도 좌측 목록이 안 사라져.
+import Base from './Base.astro';
+import WikiSidebar from '../components/WikiSidebar.astro';
+
+export interface Props {
+  title?: string;
+  description?: string;
+  activeSlug?: string;   // 지금 보는 글 (좌측 강조)
+  hasTOC?: boolean;      // 우측 세부목차 슬롯을 쓸지
+}
+const { title, description, activeSlug, hasTOC = false } = Astro.props;
+---
+
+<Base title={title} description={description} full>
+  <div class:list={['wiki-grid', { 'has-toc': hasTOC }]}>
+    <div class="col-side">
+      <WikiSidebar activeSlug={activeSlug} />
+    </div>
+
+    <div class="col-main">
+      <slot />
+    </div>
+
+    {hasTOC && (
+      <div class="col-toc">
+        <slot name="toc" />
+      </div>
+    )}
+  </div>
+</Base>
+
+<style>
+  .wiki-grid {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    gap: 2.5rem;
+    align-items: start;
+  }
+  .wiki-grid.has-toc {
+    grid-template-columns: 240px minmax(0, 1fr) 200px;
+  }
+
+  .col-side, .col-toc {
+    position: sticky;
+    top: calc(var(--header-height) + 1.5rem);
+    max-height: calc(100vh - var(--header-height) - 3rem);
+    overflow-y: auto;
+  }
+
+  /* 태블릿: 우측 목차 숨김 */
+  @media (max-width: 1080px) {
+    .wiki-grid.has-toc { grid-template-columns: 240px minmax(0, 1fr); }
+    .col-toc { display: none; }
+  }
+
+  /* 모바일: 좌측 목록이 본문 위로 접힘 */
+  @media (max-width: 760px) {
+    .wiki-grid, .wiki-grid.has-toc { grid-template-columns: 1fr; gap: 1.5rem; }
+    .col-side {
+      position: static;
+      max-height: none;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 1rem;
+    }
+  }
+</style>

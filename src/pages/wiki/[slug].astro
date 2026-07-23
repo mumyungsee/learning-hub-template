@@ -1,0 +1,68 @@
+---
+import WikiLayout from '../../layouts/WikiLayout.astro';
+import Prose from '../../components/Prose.astro';
+import TOC from '../../components/TOC.astro';
+import { getWiki, getProjects, extractHeadings } from '../../lib/content';
+
+export async function getStaticPaths() {
+  const wiki = await getWiki();
+  return wiki.map((e) => ({ params: { slug: e.slug }, props: { entry: e } }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await entry.render();
+const headings = extractHeadings(entry.body);
+const fmt = (d: Date) => d.toISOString().slice(0, 10);
+
+const 종류표시: Record<string, string> = { 로드맵: '전체 지도', 개념: '개념', 사례: '사례', 회고: '주차 회고' };
+
+// 사례글이면 소속 프로젝트 역링크
+let 소속: { slug: string; title: string } | null = null;
+if (entry.data.종류 === '사례' && entry.data.프로젝트) {
+  const proj = (await getProjects()).find((p) => p.slug === entry.data.프로젝트);
+  if (proj) 소속 = { slug: proj.slug, title: proj.data.title };
+}
+---
+
+<WikiLayout title={entry.data.title} description={entry.data.summary} activeSlug={entry.slug} hasTOC>
+  <div class="wiki-meta">
+    <span class:list={['kind', entry.data.종류]}>{종류표시[entry.data.종류]}</span>
+    {entry.data.주차 && <span class="wk">{entry.data.주차}주차</span>}
+    <span class="date">{fmt(entry.data.date)}</span>
+    {소속 && <span class="proj">· <a href={`/projects/${소속.slug}`}>{소속.title}</a> 연재</span>}
+  </div>
+
+  <h1 class="wiki-title">{entry.data.title}</h1>
+  {entry.data.summary && <p class="wiki-lead">{entry.data.summary}</p>}
+
+  <Prose>
+    <Content />
+  </Prose>
+
+  <TOC slot="toc" headings={headings} />
+</WikiLayout>
+
+<style>
+  .wiki-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 0.6rem;
+  }
+  .kind {
+    font-weight: 600;
+    padding: 0.12rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+  }
+  .kind.로드맵 { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .kind.개념 { background: var(--amber-bg); color: var(--amber-fg); border-color: var(--amber-bg); }
+  .kind.회고 { background: var(--green-bg); color: var(--green-fg); border-color: var(--green-bg); }
+  .proj a { color: var(--muted); }
+
+  .wiki-title { font-size: 1.8rem; font-weight: 700; margin: 0 0 0.4rem; }
+  .wiki-lead { color: var(--muted); font-size: 1.05rem; margin: 0 0 1.5rem; }
+</style>

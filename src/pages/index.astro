@@ -1,0 +1,120 @@
+---
+import Base from '../layouts/Base.astro';
+import Prose from '../components/Prose.astro';
+import { site } from '../config/site';
+import { getLanding, getProjects, getWiki } from '../lib/content';
+
+// 홈 = 내가 만든 랜딩(있으면) + 아래로 딸려오는 최근 활동(프로젝트·위키)
+const landing = await getLanding();
+const Landing = landing ? (await landing.render()).Content : null;
+
+const projects = (await getProjects()).slice(0, 4);
+const recent = (await getWiki()).slice().reverse().slice(0, 3);
+
+const 헤드라인 = landing?.data.헤드라인 ?? site.기본헤드라인;
+const 소개 = landing?.data.소개 ?? site.기본소개;
+const fmt = (d: Date) => d.toISOString().slice(0, 10);
+---
+
+<Base description={소개}>
+  {/* ── 랜딩 영역 ─────────────────────────────── */}
+  {Landing ? (
+    <section class="landing">
+      {(landing?.data.헤드라인 || landing?.data.소개) && (
+        <header class="hero">
+          {landing?.data.헤드라인 && <h1>{landing.data.헤드라인}</h1>}
+          {landing?.data.소개 && <p>{landing.data.소개}</p>}
+        </header>
+      )}
+      <Prose>
+        <Landing />
+      </Prose>
+    </section>
+  ) : (
+    <section class="hero placeholder">
+      <h1>{헤드라인}</h1>
+      <p>{소개}</p>
+      <div class="hint">
+        <code>src/content/landing/landing.md</code> 를 만들면 이 자리가 내 랜딩페이지가 돼요.
+      </div>
+    </section>
+  )}
+
+  {/* ── 아래로 딸려오는 최근 활동 (자동) ────────── */}
+  <section class="block">
+    <div class="block-head">
+      <h2>내 프로젝트</h2>
+      <a href="/projects" class="more">전체 보기 →</a>
+    </div>
+    {projects.length === 0 ? (
+      <div class="empty">아직 프로젝트가 없어요.</div>
+    ) : (
+      <div class="card-grid">
+        {projects.map((p) => (
+          <a href={`/projects/${p.slug}`} class="card">
+            <span class:list={['badge', p.data.status]}>{p.data.status}</span>
+            <h3>{p.data.title}</h3>
+            {p.data.summary && <p class="summary">{p.data.summary}</p>}
+          </a>
+        ))}
+      </div>
+    )}
+  </section>
+
+  <section class="block">
+    <div class="block-head">
+      <h2>최근 학습위키</h2>
+      <a href="/wiki" class="more">전체 보기 →</a>
+    </div>
+    {recent.length === 0 ? (
+      <div class="empty">배운 것이 위키에 쌓여요.</div>
+    ) : (
+      <ul class="list">
+        {recent.map((c) => (
+          <li>
+            <a href={`/wiki/${c.slug}`}>
+              <strong>{c.data.title}</strong>
+              {c.data.summary && <span class="summary"> — {c.data.summary}</span>}
+              <span class="date">{fmt(c.data.date)}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
+</Base>
+
+<style>
+  .landing { margin-bottom: 3rem; }
+  .hero { text-align: center; margin-bottom: 2rem; }
+  .hero h1 { font-size: 2rem; font-weight: 700; margin: 0 0 0.6rem; }
+  .hero p { color: var(--muted); font-size: 1.05rem; margin: 0; }
+
+  .placeholder {
+    padding: 3rem 1.5rem;
+    border: 1px dashed var(--line);
+    border-radius: var(--radius);
+    margin-bottom: 3rem;
+  }
+  .placeholder .hint {
+    margin-top: 1.2rem;
+    font-size: 0.88rem;
+    color: var(--muted);
+  }
+
+  .block { margin-bottom: 3rem; }
+  .block-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+  .block-head h2 { font-size: 1.25rem; margin: 0; }
+  .more { font-size: 0.85rem; color: var(--muted); text-decoration: none; }
+  .more:hover { color: var(--fg); }
+
+  .list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: var(--radius); }
+  .list li + li { border-top: 1px solid var(--line); }
+  .list a { display: block; padding: 0.9rem 1.1rem; text-decoration: none; }
+  .list a:hover { background: var(--surface); }
+  .list .summary { color: var(--muted); }
+  .list .date { display: block; font-size: 0.78rem; color: var(--muted); margin-top: 0.2rem; }
+</style>
