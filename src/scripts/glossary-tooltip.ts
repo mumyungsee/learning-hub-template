@@ -142,6 +142,21 @@ export const glossaryTerms: GlossaryTerm[] = [
 
   // === 도구 첫 실행 화면 ===
   { regex: /Welcome to Claude Code/g, tip: 'Claude Code를 처음 실행하면 뜨는 환영 화면. 이게 보이면 설치·로그인 성공' },
+
+  // === 23기 챌린지에서 자주 나오는 것 (2026-07-25 추가) ===
+  { regex: /\bLTS\b/g, tip: '오래 안정적으로 지원되는 버전(Long Term Support). 뭘 설치할지 고를 땐 LTS를 고르면 안전' },
+  { regex: /\bwinget\b/g, tip: 'Windows에 프로그램을 명령 한 줄로 설치해주는 도구. Windows에 기본으로 들어있음' },
+  { regex: /\bHomebrew\b/g, tip: 'Mac에 프로그램을 명령 한 줄로 설치해주는 도구' },
+  { regex: /\blocalhost\b/g, tip: '내 컴퓨터 자신을 가리키는 주소. localhost로 시작하는 주소 = 내 컴퓨터 안에서만 보이는 미리보기' },
+  { regex: /\bUAC\b/g, tip: 'Windows의 권한 확인 팝업(파란 창). "변경을 허용하시겠어요?"가 뜨면 "예"를 누르면 됨' },
+  { regex: /\bCowork\b/g, tip: 'Claude 데스크탑 앱의 작업 공간. 폴더를 열고 AI와 함께 파일 작업을 하는 곳' },
+  { regex: /코워크/g, tip: 'Claude 데스크탑 앱의 작업 공간. 폴더를 열고 AI와 함께 파일 작업을 하는 곳' },
+  { regex: /세션/g, tip: 'AI와의 대화 한 판. 새 세션 = 새 대화창을 열어 처음부터 시작' },
+  { regex: /사고량/g, tip: 'AI가 답하기 전에 얼마나 깊게 생각할지 설정. 높이면 똑똑해지지만 느려짐 — 단순한 일엔 낮게' },
+  { regex: /온보딩/g, tip: '처음 시작하는 사람이 헤매지 않게 적응을 돕는 과정' },
+  { regex: /로드맵/g, tip: '목표까지 가는 길을 단계별로 그린 계획표' },
+  { regex: /프론트매터/g, tip: '마크다운 파일 맨 위 ---로 감싼 정보 칸. 제목·날짜·공개 여부 같은 "이 글에 대한 정보"' },
+  { regex: /\bslug\b/g, tip: '글의 인터넷 주소로 쓰일 영문 이름. 예: my-first-post' },
 ];
 
 /**
