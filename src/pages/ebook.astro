@@ -29,10 +29,12 @@ const 종류표시: Record<string, string> = { 개념: '개념', 사례: '사례
       <h1 class="page-title">{site.이름} — 학습 전자책</h1>
       <p class="page-desc">학습위키를 책으로 묶었어요. 로드맵이 서문, 주차가 챕터예요. 지금 {total}꼭지.</p>
     </div>
-    <div class="actions">
-      <button id="download-btn" class="btn primary">전자책 내려받기</button>
-      <button id="print-btn" class="btn">PDF로 저장 (인쇄)</button>
-    </div>
+    {total > 0 && (
+      <div class="actions">
+        <button id="download-btn" class="btn primary">전자책 내려받기</button>
+        <button id="print-btn" class="btn">PDF로 저장 (인쇄)</button>
+      </div>
+    )}
   </div>
 
   {total === 0 ? (
@@ -164,8 +166,12 @@ body{max-width:760px;margin:0 auto;padding:2rem;font-family:-apple-system,'Malgu
     const a = document.createElement('a');
     a.href = url;
     a.download = `${bookTitle}-학습전자책-${오늘}.html`;
+    // ★ 링크를 문서에 붙였다가 클릭해야 브라우저가 받아들인다 (안 붙이면 무시하는 브라우저가 있음)
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    // ★ 주소 해제는 잠깐 뒤에. 바로 지우면 다운로드가 시작되기 전에 사라져 실패한다
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
   });
   document.getElementById('print-btn')?.addEventListener('click', () => window.print());
 </script>
