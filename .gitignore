@@ -9,6 +9,11 @@ node_modules/
 .env
 .env.production
 
+# 개인 학습일지 — GitHub에 올리지 않음 (레포가 공개여도 안 보이게)
+# 샘플 안내 파일 하나만 예외로 남겨 폴더가 유지되게 함
+src/content/journal/*
+!src/content/journal/2026-07-23.md
+
 # macOS / editor
 .DS_Store
 *.log
