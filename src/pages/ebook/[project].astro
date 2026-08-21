@@ -1,33 +1,51 @@
 ---
-import Base from '../layouts/Base.astro';
-import { site } from '../config/site';
-import { getWikiGrouped } from '../lib/content';
+import Base from '../../layouts/Base.astro';
+import { getAllBooks, getBook, getProjectCard } from '../../lib/content';
+import { 종류라벨 } from '../../lib/labels';
 
-// 전자책 = 학습위키를 그대로 책으로 묶은 것.
-//   로드맵 = 서문(전체 지도) / 주차별 = 챕터 (개념 → 사례 → 회고)
-const { roadmap, weeks } = await getWikiGrouped();
+// 프로젝트 하나가 책 한 권. 글은 여전히 /wiki/{slug} 한 곳에만 살고,
+// 여기는 그 글들을 "책 순서"로 다시 꿴 뷰다.
+// ★ 책장에 안 꽂힌 책도 주소는 만든다. 주인이 미리 읽어보고 낼지 정해야 하니까.
+//   (책장 노출 여부는 프로젝트 카드의 `책` 토글이 정한다 — 여기서 거르지 않는다)
+export async function getStaticPaths() {
+  const books = await getAllBooks();
+  return books.map((b) => ({ params: { project: b.slug } }));
+}
 
-// 각 글 본문을 미리 렌더
+const { project } = Astro.params;
+const book = await getBook(project!);
+if (!book) return Astro.redirect('/ebook');
+
+// 프로젝트 카드 본문이 이 책의 서문이 된다
+const 카드 = await getProjectCard(project!);
+const 서문내용 = 카드 ? (await 카드.render()).Content : null;
+
 const renderEntry = async (e: any) => {
   const { Content } = await e.render();
   return { data: e.data, slug: e.slug, Content };
 };
-const 서문 = await Promise.all(roadmap.map(renderEntry));
 const 챕터들 = await Promise.all(
-  weeks.map(async (w) => ({ 주차: w.주차, items: await Promise.all(w.items.map(renderEntry)) })),
+  book.주차별.map(async (w) => ({ 주차: w.주차, items: await Promise.all(w.items.map(renderEntry)) })),
 );
 
-const total = 서문.length + 챕터들.reduce((n, w) => n + w.items.length, 0);
+const total = book.cases.length;
 const fmt = (d: Date) => d.toISOString().slice(0, 10);
 const 오늘 = new Date().toISOString().slice(0, 10);
-const 종류표시: Record<string, string> = { 개념: '개념', 사례: '사례', 회고: '회고' };
 ---
 
-<Base title="전자책" wide>
+<Base title={`${book.title} — 책으로 보기`} wide>
+  <a href="/ebook" class="back-link">← 내 서재</a>
+
   <div class="ebook-head">
     <div>
-      <h1 class="page-title">{site.이름} — 학습 전자책</h1>
-      <p class="page-desc">학습위키를 책으로 묶었어요. 로드맵이 서문, 주차가 챕터예요. 지금 {total}꼭지.</p>
+      <h1 class="page-title">{book.title}</h1>
+      <p class="page-desc">이 프로젝트를 만들며 쓴 글이 순서대로 한 권이 됐어요. 지금 {total}꼭지.</p>
+      {!book.책 && (
+        <p class="draft-note">
+          아직 <strong>서재에 안 꽂힌 책</strong>이에요. 나만 보는 중이고,
+          카드에 <code>책: true</code>를 넣으면 책장에 올라가요.
+        </p>
+      )}
     </div>
     {total > 0 && (
       <div class="actions">
@@ -38,26 +56,27 @@ const 종류표시: Record<string, string> = { 개념: '개념', 사례: '사례
   </div>
 
   {total === 0 ? (
-    <div class="empty">위키가 쌓이면 여기서 한 권의 책이 돼요. 로드맵부터 만들어보세요.</div>
+    <div class="empty">
+      아직 이 프로젝트의 글이 없어요.<br />
+      사례글을 쓸 때 <code>프로젝트: {project}</code>를 달면 여기에 한 꼭지씩 쌓여요.
+    </div>
   ) : (
     <div id="book">
       <!-- 표지 -->
       <section class="cover">
-        <h1>{site.이름}</h1>
-        <p class="sub">AI와 함께한 한 달의 학습 기록</p>
+        <h1>{book.title}</h1>
+        {book.summary && <p class="sub">{book.summary}</p>}
+        <p class="sub small">{fmt(book.started)} 부터 · {total}꼭지</p>
       </section>
 
-      <!-- 서문 = 로드맵 -->
-      {서문.map((r) => {
-        const C = r.Content;
-        return (
-          <section class="part preface">
-            <div class="part-label">서문 · 전체 지도</div>
-            <h2>{r.data.title}</h2>
-            <div class="prose"><C /></div>
-          </section>
-        );
-      })}
+      <!-- 서문 = 프로젝트 카드 (왜 만들었고 뭘 하려 했는지) -->
+      {서문내용 && (
+        <section class="part preface">
+          <div class="part-label">서문 · 이 프로젝트는</div>
+          <h2>{book.title}</h2>
+          <div class="prose">{(() => { const C = 서문내용; return <C />; })()}</div>
+        </section>
+      )}
 
       <!-- 목차 -->
       <nav class="toc">
@@ -83,7 +102,7 @@ const 종류표시: Record<string, string> = { 개념: '개념', 사례: '사례
             const C = e.Content;
             return (
               <section class="section">
-                <div class="sec-kind">{종류표시[e.data.종류] ?? e.data.종류}</div>
+                <div class="sec-kind">{종류라벨(e.data.종류)}</div>
                 <h3>{e.data.title}</h3>
                 <div class="sec-date">{fmt(e.data.date)}</div>
                 <div class="prose"><C /></div>
@@ -97,6 +116,17 @@ const 종류표시: Record<string, string> = { 개념: '개념', 사례: '사례
 </Base>
 
 <style>
+  .back-link {
+    display: inline-block; margin-bottom: 1rem;
+    color: var(--muted); text-decoration: none; font-size: 0.9rem;
+  }
+  .back-link:hover { color: var(--fg); }
+  .draft-note {
+    margin: 0.5rem 0 0; font-size: 0.85rem; color: var(--muted);
+  }
+  .draft-note code { background: var(--surface); padding: 0.1rem 0.3rem; border-radius: 4px; }
+  .cover .sub.small { font-size: 0.85rem; opacity: 0.75; margin-top: 0.4rem; }
+
   .ebook-head {
     display: flex; flex-wrap: wrap; align-items: flex-end;
     justify-content: space-between; gap: 1rem; margin-bottom: 2rem;
@@ -117,7 +147,7 @@ const 종류표시: Record<string, string> = { 개념: '개념', 사례: '사례
   .cover .sub { color: var(--muted); margin: 0; }
 
   .part-label { font-size: 0.74rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
-  .preface { padding: 2.5rem 2rem; border-bottom: 1px solid var(--line); background: #fbfaf9; }
+  .preface { padding: 2.5rem 2rem; border-bottom: 1px solid var(--line); background: var(--surface); }
   .preface > h2 { margin: 0.3rem 0 1rem; font-size: 1.5rem; border: none; }
 
   .toc { padding: 2rem; border-bottom: 1px solid var(--line); }
@@ -145,7 +175,7 @@ const 종류표시: Record<string, string> = { 개념: '개념', 사례: '사례
   }
 </style>
 
-<script define:vars={{ bookTitle: site.이름, 오늘 }}>
+<script define:vars={{ bookTitle: book.title, 오늘 }}>
   const btn = document.getElementById('download-btn');
   btn?.addEventListener('click', () => {
     const book = document.getElementById('book');
@@ -157,7 +187,7 @@ const 종류표시: Record<string, string> = { 개념: '개념', 사례: '사례
     }
     const html = `<!doctype html>
 <html lang="ko"><head><meta charset="utf-8">
-<title>${bookTitle} — 학습 전자책</title>
+<title>${bookTitle}</title>
 <style>${css}
 body{max-width:760px;margin:0 auto;padding:2rem;font-family:-apple-system,'Malgun Gothic',sans-serif;line-height:1.7;}
 </style></head><body>${book.outerHTML}</body></html>`;
@@ -165,7 +195,7 @@ body{max-width:760px;margin:0 auto;padding:2rem;font-family:-apple-system,'Malgu
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${bookTitle}-학습전자책-${오늘}.html`;
+    a.download = `${bookTitle}-${오늘}.html`;
     // ★ 링크를 문서에 붙였다가 클릭해야 브라우저가 받아들인다 (안 붙이면 무시하는 브라우저가 있음)
     document.body.appendChild(a);
     a.click();

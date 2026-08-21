@@ -2,6 +2,7 @@
 // 위키 좌측 목록 — 로드맵(맨 위) + 주차별로 글이 쌓여.
 // 챌린지를 진행할수록 여기가 세로로 길어지면서 "위키가 자란다".
 import { getWikiGrouped } from '../lib/content';
+import { 종류라벨 } from '../lib/labels';
 
 export interface Props {
   activeSlug?: string;   // 지금 보고 있는 글 (좌측에서 강조 표시)
@@ -9,7 +10,6 @@ export interface Props {
 const { activeSlug } = Astro.props;
 const { roadmap, weeks } = await getWikiGrouped();
 
-const 종류표시: Record<string, string> = { 로드맵: '지도', 개념: '개념', 사례: '사례', 회고: '회고' };
 ---
 
 <aside class="wiki-side">
@@ -28,7 +28,7 @@ const 종류표시: Record<string, string> = { 로드맵: '지도', 개념: '개
         {items.map((e) => (
           <li>
             <a href={`/wiki/${e.slug}`} class:list={{ active: e.slug === activeSlug }}>
-              <span class:list={['kind', e.data.종류]}>{종류표시[e.data.종류]}</span>
+              <span class:list={['kind', e.data.종류]}>{종류라벨(e.data.종류)}</span>
               <span class="t">{e.data.title}</span>
             </a>
           </li>
@@ -102,6 +102,7 @@ const 종류표시: Record<string, string> = { 로드맵: '지도', 개념: '개
     color: var(--muted);
     border: 1px solid var(--line);
   }
+  .kind.계획 { color: var(--muted); border-color: var(--line); font-weight: 600; }
   .kind.개념 { color: var(--amber-fg); border-color: var(--amber-bg); background: var(--amber-bg); }
   .kind.회고 { color: var(--green-fg); border-color: var(--green-bg); background: var(--green-bg); }
 </style>

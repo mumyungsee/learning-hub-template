@@ -3,6 +3,7 @@ import WikiLayout from '../../layouts/WikiLayout.astro';
 import Prose from '../../components/Prose.astro';
 import TOC from '../../components/TOC.astro';
 import { getWiki, getProjects, extractHeadings } from '../../lib/content';
+import { 종류라벨 } from '../../lib/labels';
 
 export async function getStaticPaths() {
   const wiki = await getWiki();
@@ -14,7 +15,6 @@ const { Content } = await entry.render();
 const headings = extractHeadings(entry.body);
 const fmt = (d: Date) => d.toISOString().slice(0, 10);
 
-const 종류표시: Record<string, string> = { 로드맵: '전체 지도', 개념: '개념', 사례: '사례', 회고: '주차 회고' };
 
 // 사례글이면 소속 프로젝트 역링크
 let 소속: { slug: string; title: string } | null = null;
@@ -26,7 +26,7 @@ if (entry.data.종류 === '사례' && entry.data.프로젝트) {
 
 <WikiLayout title={entry.data.title} description={entry.data.summary} activeSlug={entry.slug} hasTOC>
   <div class="wiki-meta">
-    <span class:list={['kind', entry.data.종류]}>{종류표시[entry.data.종류]}</span>
+    <span class:list={['kind', entry.data.종류]}>{종류라벨(entry.data.종류, '길게')}</span>
     {entry.data.주차 && <span class="wk">{entry.data.주차}주차</span>}
     <span class="date">{fmt(entry.data.date)}</span>
     {소속 && <span class="proj">· <a href={`/projects/${소속.slug}`}>{소속.title}</a> 연재</span>}

@@ -8,8 +8,10 @@ import { getCollection, type CollectionEntry } from 'astro:content';
 export type WikiEntry = CollectionEntry<'wiki'>;
 export type Project = CollectionEntry<'projects'>;
 
-// 종류별 정렬 우선순위 (한 주차 안에서: 로드맵 → 개념 → 사례 → 회고)
-const 종류순서: Record<string, number> = { 로드맵: 0, 개념: 1, 사례: 2, 회고: 3 };
+// 종류별 정렬 우선순위 (한 주차 안에서: 계획 → 개념 → 사례 → 회고)
+// 계획이 맨 앞인 이유 — 그 주에 뭘 만들려 했는지를 먼저 읽어야 나머지가 읽힌다.
+// (로드맵은 아래 getWikiGroups에서 따로 빠지므로 이 표에서는 순서를 다투지 않는다)
+const 종류순서: Record<string, number> = { 로드맵: 0, 계획: 1, 개념: 2, 사례: 3, 회고: 4 };
 
 // 위키 전체를 "책 순서"로 정렬해서 돌려줘.
 //   1) 로드맵(주차 없음)이 맨 앞 (전체 지도 = 서문)
@@ -67,6 +69,78 @@ export async function getCasesOf(projectSlug: string): Promise<WikiEntry[]> {
     ({ data }) => data.공개 !== false && data.종류 === '사례' && data.프로젝트 === projectSlug,
   );
   return items.sort((a, b) => a.data.date.valueOf() - b.data.date.valueOf());
+}
+
+// ─── 서재 — 프로젝트 하나가 책 한 권 ────────────────────────────────
+// 글은 여전히 `/wiki/{slug}` 한 곳에만 산다. 책은 그 글들을 다른 순서로 꿴 것뿐이다.
+// ★ 최소 개수 조건을 두지 않는다 — "몇 편 넘어야 책이 된다"는 규칙은 주인을 헷갈리게 한다.
+//   대신 **주인이 켠다**: 프로젝트 카드의 `책: true`. 글 한두 개로 책을 내는 게 민망할 수 있어서,
+//   언제 낼지는 기계가 아니라 주인이 정한다. 껐다 켰다 자유롭고, 꺼도 사례글은 그대로 남는다.
+export type Book = {
+  slug: string;
+  title: string;
+  summary?: string;
+  status: string;
+  책: boolean;
+  started: Date;
+  cases: WikiEntry[];
+  주차별: { 주차: number; items: WikiEntry[] }[];
+};
+
+// 책장에 꽂힌 책 (`책: true`인 것만)
+export async function getBooks(): Promise<Book[]> {
+  return (await getAllBooks()).filter((b) => b.책);
+}
+
+// 모든 프로젝트의 책 데이터 (토글과 무관 — 개별 책 페이지는 꺼져 있어도 열린다.
+// 주인이 미리 보고 낼지 정할 수 있어야 하므로 주소는 항상 살아 있다)
+export async function getAllBooks(): Promise<Book[]> {
+  const projects = await getProjects();
+  return Promise.all(
+    projects.map(async (p) => {
+      const cases = await getCasesOf(p.slug);
+      // 책 안에서도 주차가 챕터가 된다 (챌린지 리듬 유지)
+      const map = new Map<number, WikiEntry[]>();
+      for (const c of cases) {
+        const w = c.data.주차 ?? 0;
+        if (!map.has(w)) map.set(w, []);
+        map.get(w)!.push(c);
+      }
+      return {
+        slug: p.slug,
+        title: p.data.title,
+        summary: p.data.summary,
+        status: p.data.status,
+        책: p.data.책 ?? false,
+        started: p.data.date,
+        cases,
+        주차별: [...map.entries()]
+          .map(([주차, items]) => ({ 주차, items }))
+          .sort((a, b) => a.주차 - b.주차),
+      };
+    }),
+  );
+}
+
+// 프로젝트 카드 하나 (책의 서문으로 쓴다).
+// ★ 페이지에서 getCollection을 직접 부르지 않는다 — 데이터 읽기는 이 파일 한 곳에 모은다.
+//   그래야 스키마가 바뀌어도 고칠 자리가 하나다.
+export async function getProjectCard(slug: string): Promise<Project | null> {
+  const items = await getCollection('projects', ({ id }) => id.replace(/\.md$/, '') === slug);
+  return items[0] ?? null;
+}
+
+export async function getBook(slug: string): Promise<Book | null> {
+  return (await getAllBooks()).find((b) => b.slug === slug) ?? null;
+}
+
+// 어느 프로젝트에도 안 묶인 글 (로드맵·계획·개념·회고). 서재에서 "그 밖의 기록"으로 묶인다.
+// 사례글인데 `프로젝트:`를 안 붙인 것도 여기로 떨어진다 — 그게 눈에 보여야 연결을 챙긴다.
+export async function getStrayEntries(): Promise<WikiEntry[]> {
+  const all = await getWiki();
+  const projects = await getProjects();
+  const ids = new Set(projects.map((p) => p.slug));
+  return all.filter((e) => !(e.data.종류 === '사례' && e.data.프로젝트 && ids.has(e.data.프로젝트)));
 }
 
 // ─── 세부 목차(우측 TOC)용 — 본문에서 h2/h3 뽑기 ──────────────

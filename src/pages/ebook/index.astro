@@ -1,0 +1,145 @@
+---
+import Base from '../../layouts/Base.astro';
+import BookCover from '../../components/BookCover.astro';
+import { getBooks, getStrayEntries } from '../../lib/content';
+import { 종류라벨 } from '../../lib/labels';
+
+// 서재 — 프로젝트 하나가 책 한 권.
+// 글은 /wiki/{slug} 한 곳에만 살고, 책은 그 글들을 다른 순서로 꿴 뷰일 뿐이다.
+// ★ 책장에 꽂을지는 주인이 정한다 (프로젝트 카드의 `책: true`).
+//   "몇 편 이상이면 자동으로 책" 같은 기계 규칙을 두지 않는 이유 — 글 한두 개로
+//   책이 나오면 민망하고, 언제 낼지는 사람이 판단할 일이기 때문.
+const books = await getBooks();
+const strays = await getStrayEntries();
+
+const fmt = (d: Date) => d.toISOString().slice(0, 10);
+---
+
+<Base title="내 서재" wide>
+  <h1 class="page-title">내 서재</h1>
+  <p class="page-desc">
+    프로젝트 하나가 <strong>책 한 권</strong>이 돼요. 만드는 동안 쓴 글이 순서대로 쌓여 목차가 되고요.
+    낼지 말지는 카드의 <code>책</code> 한 줄로 내가 정해요.
+  </p>
+
+  {books.length === 0 ? (
+    <div class="empty">
+      <p>아직 책장에 꽂힌 책이 없어요.</p>
+      <p class="how">
+        <a href="/projects">프로젝트</a> 카드 맨 위에 <code>책: true</code>를 넣으면 그 프로젝트가 책으로 올라와요.<br />
+        <strong>글이 얼마나 쌓였든 상관없어요</strong> — 낼 때를 정하는 건 나예요.
+      </p>
+    </div>
+  ) : (
+    <section class="shelf-wrap">
+      <div class="shelf">
+        {books.map((b) => (
+          <div class="slot">
+            <BookCover
+              title={b.title}
+              label={b.cases.length > 0 ? `${b.cases.length}꼭지` : '아직 비어 있어요'}
+              status={b.status}
+              href={`/ebook/${b.slug}`}
+            />
+            <div class="meta">
+              <span class:list={['badge', b.status]}>{b.status}</span>
+              <span class="date">{fmt(b.started)}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+      <!-- 책장 선반 — 책이 얹혀 있는 느낌 -->
+      <div class="board"></div>
+    </section>
+  )}
+
+  {strays.length > 0 && (
+    <section class="strays">
+      <h2>그 밖의 기록</h2>
+      <p class="hint">
+        아직 어느 책에도 안 꽂힌 글이에요. 학습 로드맵·개념 페이지·주차 회고처럼
+        프로젝트에 매이지 않은 글이 여기 모여요.
+      </p>
+      <ul>
+        {strays.map((e) => (
+          <li>
+            <a href={`/wiki/${e.slug}`}>
+              <span class="kind">{종류라벨(e.data.종류)}</span>
+              <span class="t">{e.data.title}</span>
+              <span class="d">{fmt(e.data.date)}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+      <p class="hint tip">
+        💡 사례글인데 여기 있다면 <code>프로젝트:</code> 줄이 빠진 거예요. 붙이면 그 책으로 들어가요.
+      </p>
+    </section>
+  )}
+</Base>
+
+<style>
+  .page-desc { color: var(--muted); margin-bottom: 2.5rem; }
+
+  .shelf-wrap { margin-bottom: 4rem; }
+  .shelf {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 2rem 1.75rem;
+    align-items: end;
+  }
+  /* 책장 선반 — 책 밑에 깔린 나무 판 */
+  .board {
+    height: 10px;
+    margin-top: -2px;
+    border-radius: 2px;
+    background: linear-gradient(to bottom, var(--line), var(--surface));
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  }
+
+  .meta {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 0.5rem; margin-top: 0.7rem;
+  }
+  .badge {
+    font-size: 0.72rem; padding: 0.1rem 0.45rem; border-radius: 999px;
+    border: 1px solid var(--line); color: var(--muted);
+  }
+  .badge.완성 { background: var(--green-bg); color: var(--green-fg); border-color: var(--green-bg); }
+  .date { font-size: 0.72rem; color: var(--muted); }
+
+  .empty {
+    border: 1px dashed var(--line); border-radius: var(--radius);
+    padding: 3rem 2rem; text-align: center; color: var(--muted);
+  }
+  .empty p { margin: 0 0 0.6rem; }
+  .empty .how { font-size: 0.88rem; line-height: 1.8; margin: 0; }
+  .empty a { color: var(--fg); }
+
+  .strays { border-top: 1px solid var(--line); padding-top: 2.5rem; }
+  .strays h2 { font-size: 1.15rem; margin: 0 0 0.5rem; }
+  .hint { color: var(--muted); font-size: 0.88rem; margin: 0 0 1.25rem; }
+  .hint.tip { margin: 1.25rem 0 0; }
+  .strays ul { list-style: none; padding: 0; margin: 0; }
+  .strays li + li { border-top: 1px solid var(--line); }
+  .strays a {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.7rem 0.25rem; text-decoration: none; color: inherit;
+  }
+  .strays a:hover { background: var(--surface); }
+  .kind {
+    font-size: 0.7rem; padding: 0.05rem 0.4rem; border-radius: 4px;
+    border: 1px solid var(--line); color: var(--muted); white-space: nowrap;
+  }
+  .strays .t { flex: 1; min-width: 0; }
+  .strays .d { font-size: 0.75rem; color: var(--muted); white-space: nowrap; }
+
+  code {
+    background: var(--surface); padding: 0.1rem 0.3rem;
+    border-radius: 4px; font-size: 0.85em;
+  }
+
+  @media (max-width: 640px) {
+    .shelf { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 1.5rem 1rem; }
+  }
+</style>

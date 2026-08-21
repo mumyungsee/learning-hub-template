@@ -39,6 +39,28 @@ const 완성 = entry.data.status === '완성';
     <Content />
   </Prose>
 
+  <!-- 이 프로젝트의 책 — 같은 글을 책 순서로 읽는 다른 뷰 -->
+  <a class="book-link" href={`/ebook/${entry.slug}`}>
+    <span class="icon">📖</span>
+    <span class="txt">
+      <strong>이 프로젝트의 책 읽기</strong>
+      <span class="sub">
+        {cases.length > 0
+          ? `아래 기록 ${cases.length}꼭지가 한 권으로 이어져요`
+          : '아직 비어 있어요. 사례글을 쓰면 한 꼭지씩 쌓여요'}
+      </span>
+    </span>
+    <span class="arrow">→</span>
+  </a>
+
+  {!entry.data.책 && (
+    <p class="shelf-hint">
+      이 책은 아직 <strong>서재에 안 꽂혀 있어요.</strong>
+      낼 만큼 쌓였다 싶으면 카드 맨 위에 <code>책: true</code>를 넣으면 책장에 올라가요.
+      (언제든 다시 끌 수 있고, 꺼도 아래 기록은 그대로예요)
+    </p>
+  )}
+
   <!-- 이 프로젝트에 엮인 사례글 연재 -->
   {cases.length > 0 && (
     <section class="series">
@@ -62,6 +84,28 @@ const 완성 = entry.data.status === '완성';
 </Base>
 
 <style>
+  .shelf-hint {
+    margin: -1rem 0 2rem; padding: 0.7rem 0.9rem;
+    border-left: 2px solid var(--line);
+    font-size: 0.85rem; color: var(--muted); line-height: 1.6;
+  }
+  .shelf-hint code {
+    background: var(--surface); padding: 0.1rem 0.3rem; border-radius: 4px;
+  }
+
+  .book-link {
+    display: flex; align-items: center; gap: 0.9rem;
+    margin: 2rem 0; padding: 1rem 1.15rem;
+    border: 1px solid var(--line); border-radius: var(--radius);
+    text-decoration: none; color: inherit; background: var(--surface);
+    transition: border-color 0.15s, transform 0.15s;
+  }
+  .book-link:hover { border-color: var(--muted); transform: translateY(-1px); }
+  .book-link .icon { font-size: 1.4rem; line-height: 1; }
+  .book-link .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.15rem; }
+  .book-link .sub { font-size: 0.83rem; color: var(--muted); }
+  .book-link .arrow { color: var(--muted); }
+
   .head { margin-bottom: 2rem; }
   .head .page-title { margin: 0.6rem 0 0.4rem; }
   .head .lead { color: var(--muted); font-size: 1.05rem; margin: 0 0 0.6rem; }

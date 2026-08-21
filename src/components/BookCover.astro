@@ -1,0 +1,146 @@
+---
+// 책 표지 — 프로젝트 하나가 책 한 권.
+// 책을 책답게 만드는 요소: 책등 두께 · 접힘선 · 페이지 단면 · 세워진 그림자 ·
+// 금박 케이스라인 · 제목 아래 괘선 · 하단 라벨 · 인쇄물 비네팅.
+// (아루나 사이트 서재의 표지 규칙을 이 템플릿의 순수 CSS로 옮긴 것)
+
+interface Props {
+  title: string;
+  label?: string; // 표지 하단 한 줄 (예: "12꼭지")
+  status?: string; // 진행중 | 완성 — 표지 색이 달라진다
+  href: string;
+}
+const { title, label, status = '진행중', href } = Astro.props;
+const 완성 = status === '완성';
+---
+
+<a href={href} class="book" aria-label={title}>
+  <div class:list={['cover', { done: 완성 }]}>
+    <!-- 인쇄물 비네팅 — 가장자리가 가라앉아야 화면이 아니라 종이로 보인다 -->
+    <span class="vignette"></span>
+    <!-- 금박 케이스라인 — 양장본 테두리. 책등 쪽은 더 안쪽에서 시작 -->
+    <span class="caseline"></span>
+    <!-- 책등 (왼쪽 두께) -->
+    <span class="spine"></span>
+    <!-- 접힘선 — 표지가 꺾이는 자리 -->
+    <span class="fold"></span>
+    <!-- 페이지 단면 — 종이 겹침 -->
+    <span class="pages"></span>
+
+    <div class="text">
+      <div>
+        <h3 class="t">{title}</h3>
+        <span class="rule"></span>
+      </div>
+      {label && <span class="label">{label}</span>}
+    </div>
+  </div>
+</a>
+
+<style>
+  .book {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .cover {
+    position: relative;
+    aspect-ratio: 2 / 3;
+    width: 100%;
+    overflow: hidden;
+    border-radius: 2px 8px 8px 2px;
+    background: linear-gradient(150deg, #3f3a35 0%, #2a2622 60%, #201d1a 100%);
+    box-shadow: 3px 5px 14px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  /* 완성한 책은 남색 양장 — 서가에서 한눈에 구분된다 */
+  .cover.done {
+    background: linear-gradient(150deg, #2c3a4d 0%, #1e2937 60%, #171f2b 100%);
+  }
+
+  .book:hover .cover {
+    transform: translateY(-2px);
+    box-shadow: 5px 9px 22px rgba(0, 0, 0, 0.4);
+  }
+
+  .vignette {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(120% 90% at 30% 18%, transparent 30%, rgba(0, 0, 0, 0.5) 100%);
+  }
+  .caseline {
+    position: absolute;
+    left: 19px;
+    right: 11px;
+    top: 11px;
+    bottom: 11px;
+    border: 1px solid rgba(217, 183, 121, 0.27); /* 금박 */
+    border-radius: 1px;
+  }
+  .spine {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 12px;
+    border-radius: 2px 0 0 2px;
+    background: linear-gradient(to right, rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.12));
+  }
+  .fold {
+    position: absolute;
+    left: 12px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.2);
+  }
+  .pages {
+    position: absolute;
+    right: 0;
+    top: 3px;
+    bottom: 3px;
+    width: 3px;
+    border-radius: 0 8px 8px 0;
+    background: linear-gradient(to left, rgba(255, 255, 255, 0.25), transparent);
+  }
+
+  .text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 1.75rem 1.5rem 1.75rem 2.25rem;
+  }
+  .t {
+    margin: 0;
+    color: #faf9f7;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.45;
+    letter-spacing: -0.01em;
+    /* 제목이 길어도 표지를 넘지 않게 */
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .rule {
+    display: block;
+    width: 28px;
+    height: 1px;
+    margin-top: 0.7rem;
+    background: rgba(217, 183, 121, 0.7);
+  }
+  .label {
+    font-size: 0.72rem;
+    color: rgba(250, 249, 247, 0.65);
+    letter-spacing: 0.02em;
+  }
+
+  @media (max-width: 640px) {
+    .text { padding: 1.4rem 1.1rem 1.4rem 1.9rem; }
+    .t { font-size: 0.92rem; }
+  }
+</style>
