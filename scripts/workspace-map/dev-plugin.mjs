@@ -1,4 +1,5 @@
 import { scanWorkspace } from './scan.mjs';
+import { WORKSPACE_MAP_SCHEMA_VERSION } from './manifest.mjs';
 
 const ROUTE = '/__workspace-map/state.json';
 
@@ -22,7 +23,7 @@ export function workspaceMapDevPlugin({ root = process.cwd(), scan = scanWorkspa
         }
         if (request.method !== 'GET') {
           sendJson(response, 405, {
-            schemaVersion: 1,
+            schemaVersion: WORKSPACE_MAP_SCHEMA_VERSION,
             error: 'method-not-allowed',
             message: '이 주소는 현재 상태를 읽는 요청만 받을 수 있어요.',
             generatedAt: new Date().toISOString(),
@@ -35,7 +36,7 @@ export function workspaceMapDevPlugin({ root = process.cwd(), scan = scanWorkspa
           sendJson(response, 200, snapshot);
         } catch {
           sendJson(response, 503, {
-            schemaVersion: 1,
+            schemaVersion: WORKSPACE_MAP_SCHEMA_VERSION,
             error: 'workspace-scan-failed',
             message: '현재 상태를 확인하지 못했어요. 개발 서버를 다시 확인해 주세요.',
             generatedAt: new Date().toISOString(),

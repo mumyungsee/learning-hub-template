@@ -11,32 +11,42 @@
     "rootLabel",
     "staleAfterMs",
     "durationMs",
+    "activeWork",
     "nodes",
+    "extensions",
     "edges",
-    "views",
-    "summary"
+    "summary",
+    "extensionSummary"
   ],
   "properties": {
-    "schemaVersion": { "const": 1 },
+    "schemaVersion": { "const": 3 },
     "mode": { "enum": ["live", "baseline"] },
     "generatedAt": { "type": "string", "format": "date-time" },
     "rootLabel": { "type": "string", "minLength": 1, "maxLength": 120 },
     "staleAfterMs": { "type": "integer", "minimum": 1000, "maximum": 30000 },
     "durationMs": { "type": "integer", "minimum": 0 },
+    "activeWork": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/connectedWork" },
+        { "$ref": "#/$defs/invalidWork" }
+      ]
+    },
     "nodes": {
       "type": "array",
       "items": { "$ref": "#/$defs/nodeState" }
+    },
+    "extensions": {
+      "type": "array",
+      "maxItems": 30,
+      "items": { "$ref": "#/$defs/extensionState" }
     },
     "edges": {
       "type": "array",
       "items": { "$ref": "#/$defs/edge" }
     },
-    "views": {
-      "type": "array",
-      "minItems": 1,
-      "items": { "$ref": "#/$defs/view" }
-    },
-    "summary": { "$ref": "#/$defs/summary" }
+    "summary": { "$ref": "#/$defs/summary" },
+    "extensionSummary": { "$ref": "#/$defs/extensionSummary" }
   },
   "$defs": {
     "safeRelativePath": {
@@ -45,6 +55,34 @@
       "maxLength": 500,
       "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*://).+"
     },
+    "connectedWork": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "id", "title", "pointerPath"],
+      "properties": {
+        "status": { "const": "connected" },
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "pointerPath": { "const": ".workspace-map/active-work.json" }
+      }
+    },
+    "invalidWork": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "id", "title", "pointerPath", "reason"],
+      "properties": {
+        "status": { "const": "invalid" },
+        "id": { "type": "null" },
+        "title": { "type": "null" },
+        "pointerPath": { "const": ".workspace-map/active-work.json" },
+        "reason": { "type": "string", "minLength": 1, "maxLength": 240 }
+      }
+    },
+    "pathList": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/safeRelativePath" }
+    },
     "nodeState": {
       "type": "object",
       "additionalProperties": false,
@@ -52,33 +90,57 @@
         "id",
         "status",
         "reason",
-        "paths",
-        "artifactCount",
+        "foundationPaths",
+        "workPaths",
+        "missingWorkPaths",
+        "foundationCount",
+        "workCount",
         "latestModifiedAt",
-        "evidencePaths"
+        "evidencePaths",
+        "foundationIssues"
       ],
       "properties": {
         "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
-        "status": {
-          "enum": ["conceptual", "expected", "present", "verified", "needs-review"]
-        },
+        "status": { "enum": ["expected", "present", "verified", "needs-review"] },
         "reason": { "type": "string", "minLength": 1, "maxLength": 240 },
-        "paths": {
-          "type": "array",
-          "uniqueItems": true,
-          "items": { "$ref": "#/$defs/safeRelativePath" }
-        },
-        "artifactCount": { "type": "integer", "minimum": 0 },
+        "foundationPaths": { "$ref": "#/$defs/pathList" },
+        "workPaths": { "$ref": "#/$defs/pathList" },
+        "missingWorkPaths": { "$ref": "#/$defs/pathList" },
+        "foundationCount": { "type": "integer", "minimum": 0 },
+        "workCount": { "type": "integer", "minimum": 0 },
         "latestModifiedAt": {
           "oneOf": [
             { "type": "string", "format": "date-time" },
             { "type": "null" }
           ]
         },
-        "evidencePaths": {
+        "evidencePaths": { "$ref": "#/$defs/pathList" },
+        "foundationIssues": {
           "type": "array",
           "uniqueItems": true,
-          "items": { "$ref": "#/$defs/safeRelativePath" }
+          "items": { "type": "string", "minLength": 1, "maxLength": 240 }
+        }
+      }
+    },
+    "extensionState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "type", "role", "attachTo", "status", "reason", "paths", "missingPaths", "latestModifiedAt"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "label": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "type": { "enum": ["skill", "script", "mcp", "api", "database", "pkm"] },
+        "role": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "attachTo": { "enum": ["harness", "output"] },
+        "status": { "enum": ["present", "needs-review"] },
+        "reason": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "paths": { "$ref": "#/$defs/pathList" },
+        "missingPaths": { "$ref": "#/$defs/pathList" },
+        "latestModifiedAt": {
+          "oneOf": [
+            { "type": "string", "format": "date-time" },
+            { "type": "null" }
+          ]
         }
       }
     },
@@ -91,35 +153,42 @@
         "from": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
         "to": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
         "label": { "type": "string", "minLength": 1, "maxLength": 120 },
-        "style": { "enum": ["normal", "emphasis", "feedback", "future"] }
+        "style": { "enum": ["normal", "emphasis", "feedback", "future"] },
+        "fromSide": { "enum": ["top", "right", "bottom", "left"] },
+        "toSide": { "enum": ["top", "right", "bottom", "left"] },
+        "via": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/point" }
+        },
+        "labelAt": { "$ref": "#/$defs/point" }
       }
     },
-    "view": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["id", "label", "description", "focusNodeIds"],
-      "properties": {
-        "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
-        "label": { "type": "string", "minLength": 1, "maxLength": 40 },
-        "description": { "type": "string", "minLength": 1, "maxLength": 240 },
-        "focusNodeIds": {
-          "type": "array",
-          "uniqueItems": true,
-          "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" }
-        }
-      }
+    "point": {
+      "type": "array",
+      "prefixItems": [{ "type": "number" }, { "type": "number" }],
+      "minItems": 2,
+      "maxItems": 2
     },
     "summary": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["conceptual", "expected", "present", "verified", "needsReview", "total"],
+      "required": ["expected", "present", "verified", "needsReview", "total"],
       "properties": {
-        "conceptual": { "type": "integer", "minimum": 0 },
         "expected": { "type": "integer", "minimum": 0 },
         "present": { "type": "integer", "minimum": 0 },
         "verified": { "type": "integer", "minimum": 0 },
         "needsReview": { "type": "integer", "minimum": 0 },
         "total": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "extensionSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["present", "needsReview", "total"],
+      "properties": {
+        "present": { "type": "integer", "minimum": 0 },
+        "needsReview": { "type": "integer", "minimum": 0 },
+        "total": { "type": "integer", "minimum": 0 }
       }
     }
   }

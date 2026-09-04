@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The endpoint gives the map page a read-only snapshot of supported artifacts in the current learning-hub project. It exists only while the local development server is running.
+The endpoint gives the map page a read-only snapshot of the fixed template flow, fixed-node work files, and task-specific execution extensions. It exists only while the local development server is running.
 
 ## Route
 
@@ -12,7 +12,7 @@ GET /__workspace-map/state.json
 
 - No query parameter, request body, path parameter, cookie or authentication value is accepted.
 - Any alternate method returns `405 Method Not Allowed`.
-- A production/static build does not expose this live route. The map page falls back to its baseline teaching view.
+- A production/static build does not expose this live route. The map page falls back to its baseline teaching map.
 
 ## Successful response
 
@@ -28,33 +28,56 @@ Example:
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 3,
   "mode": "live",
   "generatedAt": "2026-09-03T07:30:00.000Z",
   "rootLabel": "my-learning-hub",
   "staleAfterMs": 5000,
   "durationMs": 14,
+  "activeWork": {
+    "status": "connected",
+    "id": "inquiry-reply",
+    "title": "기업 AI 강의 문의 답변 자동화",
+    "pointerPath": ".workspace-map/active-work.json"
+  },
   "nodes": [
     {
-      "id": "context",
+      "id": "spec",
       "status": "present",
-      "reason": "공통 지침 파일 3개를 확인했어요.",
-      "paths": ["AGENTS.md", "SOUL.md", "USER.md"],
-      "artifactCount": 3,
+      "reason": "이번 업무 파일 1개를 확인했어요. 검증 완료와는 구분해요.",
+      "foundationPaths": [],
+      "workPaths": ["specs/001-inquiry/spec.md"],
+      "missingWorkPaths": [],
+      "foundationCount": 0,
+      "workCount": 1,
       "latestModifiedAt": "2026-08-28T10:20:30.000Z",
-      "evidencePaths": []
+      "evidencePaths": [],
+      "foundationIssues": []
+    }
+  ],
+  "extensions": [
+    {
+      "id": "inquiry-reply-script",
+      "label": "문의 답변 스크립트",
+      "type": "script",
+      "role": "정확하게 반복할 계산과 변환을 맡아요.",
+      "attachTo": "harness",
+      "status": "present",
+      "reason": "이번 업무에서 새로 연결한 업무용 스크립트 파일 1개를 확인했어요.",
+      "paths": ["scripts/inquiry-reply.py"],
+      "missingPaths": [],
+      "latestModifiedAt": "2026-08-28T10:20:30.000Z"
     }
   ],
   "edges": [],
-  "views": [],
   "summary": {
-    "conceptual": 1,
-    "expected": 2,
-    "present": 5,
+    "expected": 6,
+    "present": 2,
     "verified": 0,
     "needsReview": 1,
-    "total": 9
-  }
+    "total": 8
+  },
+  "extensionSummary": { "present": 1, "needsReview": 0, "total": 1 }
 }
 ```
 
@@ -68,7 +91,7 @@ Cache-Control: no-store
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 3,
   "error": "workspace-scan-failed",
   "message": "현재 상태를 확인하지 못했어요. 개발 서버를 다시 확인해 주세요.",
   "generatedAt": "2026-09-03T07:30:00.000Z"
@@ -89,6 +112,7 @@ Cache-Control: no-store
 4. No response field contains file content.
 5. Excluded directories and environment files never appear, even if a broad future probe is misconfigured.
 6. Response generation performs no write, move, delete, command execution or network request.
+7. Current-work membership is read only from `.workspace-map/active-work.json`; timestamps and filenames do not infer membership.
 
 ## Refresh behavior
 

@@ -1,0 +1,166 @@
+---
+import Base from '../../layouts/Base.astro';
+
+const templateNodes = [
+  { id: 'owner', label: '업무 고르기', role: '무엇을 왜 위임할지 정해요.', paths: [], x: 30, y: 420, w: 170, h: 116 },
+  { id: 'entry', label: '도구별 입구', role: '각 AI가 공통 지침으로 들어와요.', paths: ['CLAUDE.md', 'GEMINI.md'], x: 220, y: 420, w: 180, h: 116 },
+  { id: 'context', label: '공통 지침 · 맥락', role: '규칙과 사용자 맥락을 읽어요.', paths: ['AGENTS.md', 'SOUL.md', 'USER.md'], x: 420, y: 420, w: 200, h: 116 },
+  { id: 'spec', label: '명세 만들기', role: '결과와 완료 조건을 정해요.', paths: ['specs/{업무}/spec.md'], x: 640, y: 420, w: 180, h: 116 },
+  { id: 'harness', label: '하네스 구성하기', role: '필요한 실행 도구를 붙여요.', paths: ['.claude/skills/'], x: 840, y: 420, w: 190, h: 116 },
+  { id: 'verify', label: '검증하기', role: '작동 여부를 증거로 확인해요.', paths: ['tests/'], x: 1050, y: 420, w: 180, h: 116 },
+  { id: 'output', label: '결과물 만들기', role: '사람이 사용할 산출물을 만들어요.', paths: [], x: 1250, y: 420, w: 190, h: 116 },
+  { id: 'handoff', label: '인계 · 재진입', role: '다른 사람·AI·세션이 이어받아요.', paths: ['HANDOFF.md'], x: 1050, y: 680, w: 180, h: 116 },
+];
+
+const workExtensions = [
+  { id: 'work-skill', label: '업무용 스킬', type: '스킬', status: '이번 업무에서 추가', attachTo: ['harness'], role: '사장님 업무에 맞춘 반복 절차예요.', paths: ['.claude/skills/{업무명}/SKILL.md'], x: 680, y: 180, w: 190, h: 124 },
+  { id: 'work-script', label: '업무용 스크립트', type: '스크립트', status: '이번 업무에서 추가', attachTo: ['harness'], role: '정확하게 반복할 계산과 변환을 맡아요.', paths: ['scripts/{업무명}/run.mjs'], x: 840, y: 680, w: 190, h: 124 },
+  { id: 'work-mcp', label: '업무용 MCP', type: 'MCP 연결', status: '이번 업무에서 추가', attachTo: ['harness'], role: '업무에 필요한 외부 도구를 연결해요.', paths: ['config/mcp/{도구명}.json'], x: 890, y: 180, w: 190, h: 124 },
+];
+
+const optionalExtensions = [
+  { id: 'optional-db', label: 'DB 연결', type: '선택 확장', status: '필요할 때만', attachTo: ['harness'], role: '기록을 오래 저장해야 할 때 추가할 수 있어요.', paths: ['data/{업무명}.db'], x: 1100, y: 180, w: 190, h: 124, optional: true },
+  { id: 'optional-pkm', label: 'PKM 연계', type: '선택 확장', status: '필요할 때만', attachTo: ['output'], role: '결과를 장기 지식으로 남기고 다음 업무에서 다시 불러와요.', paths: ['50_pkm/'], x: 1250, y: 680, w: 190, h: 124, optional: true },
+];
+
+const extensionNodes = [...workExtensions, ...optionalExtensions];
+
+const templateEdges = [
+  { from: 'owner', to: 'entry' }, { from: 'entry', to: 'context' }, { from: 'context', to: 'spec' },
+  { from: 'spec', to: 'harness' }, { from: 'harness', to: 'verify' }, { from: 'verify', to: 'output' },
+  { from: 'verify', to: 'handoff', fromSide: 'bottom', toSide: 'right' },
+  { from: 'handoff', to: 'entry', fromSide: 'left', toSide: 'bottom', via: [[1040, 835], [310, 835]] },
+];
+const branchEdges = extensionNodes.filter((node) => node.id !== 'optional-pkm').flatMap((node) => node.attachTo.map((templateId) => ({ from: templateId, to: node.id, optional: node.optional })));
+const knowledgeEdges = [
+  { from: 'output', to: 'optional-pkm', label: '정제·저장', fromSide: 'bottom', toSide: 'top', labelX: 1260, labelY: 620 },
+  { from: 'optional-pkm', to: 'context', label: '다음 업무에서 관련 지식 불러오기', fromSide: 'right', toSide: 'top', via: [[1450, 742], [1450, 105], [520, 105]], labelX: 710, labelY: 90 },
+];
+
+const allNodes = [...templateNodes, ...extensionNodes];
+const nodeById = new Map(allNodes.map((node) => [node.id, node]));
+function anchor(nodeId, side = 'right') {
+  const node = nodeById.get(nodeId);
+  if (!node) return [0, 0];
+  if (side === 'top') return [node.x + node.w / 2, node.y];
+  if (side === 'bottom') return [node.x + node.w / 2, node.y + node.h];
+  if (side === 'left') return [node.x, node.y + node.h / 2];
+  return [node.x + node.w, node.y + node.h / 2];
+}
+function edgePoints(edge) {
+  const start = anchor(edge.from, edge.fromSide ?? 'right');
+  const end = anchor(edge.to, edge.toSide ?? 'left');
+  if (edge.via) return [start, ...edge.via, end].map(([x, y]) => `${x},${y}`).join(' ');
+  if (['top', 'bottom'].includes(edge.fromSide) || ['top', 'bottom'].includes(edge.toSide)) {
+    const middle = (start[1] + end[1]) / 2;
+    return `${start[0]},${start[1]} ${start[0]},${middle} ${end[0]},${middle} ${end[0]},${end[1]}`;
+  }
+  const middle = (start[0] + end[0]) / 2;
+  return `${start[0]},${start[1]} ${middle},${start[1]} ${middle},${end[1]} ${end[0]},${end[1]}`;
+}
+function branchPoints(edge) {
+  const parent = nodeById.get(edge.from);
+  const child = nodeById.get(edge.to);
+  if (!parent || !child) return '';
+  if (child.y + child.h <= parent.y) return edgePoints({ ...edge, fromSide: 'top', toSide: 'bottom' });
+  if (child.y >= parent.y + parent.h) return edgePoints({ ...edge, fromSide: 'bottom', toSide: 'top' });
+  return edgePoints({ ...edge, fromSide: child.x < parent.x ? 'left' : 'right', toSide: child.x < parent.x ? 'right' : 'left' });
+}
+const detailData = JSON.stringify(Object.fromEntries(allNodes.map((node) => [node.id, {
+  label: node.label, type: 'type' in node ? node.type : '템플릿의 고정 자리', status: 'status' in node ? node.status : '항상 보임',
+  role: node.role, paths: 'paths' in node ? node.paths : [], attachTo: 'attachTo' in node ? node.attachTo.map((id) => nodeById.get(id)?.label ?? id) : [],
+}]))).replaceAll('<', '\\u003c');
+---
+
+<Base title="AX 업무 위임 구조 시안" full>
+  <main class="prototype-page">
+    <header class="prototype-header">
+      <div><p class="eyebrow">AX 업무 위임 구조 · 통합 시안</p><h1>기존 흐름은 그대로, 업무 전용 도구만 붙어요</h1><p>명세·검증·결과·인계는 원래 흐름 안에서 진행하고, 새로 만든 실행 능력만 가지처럼 보여줘요.</p></div>
+      <div class="prototype-badge">시안 · 실제 파일과 아직 연결되지 않음</div>
+    </header>
+    <section class="instruction-note" aria-label="기존 구성 표시 원칙">
+      <strong>기존 구성은 고정 흐름의 상세에서 확인</strong><span>실제 읽기 방향: 도구별 입구 → 공통 지침·맥락 → 명세</span><span>CLAUDE.md·GEMINI.md → AGENTS.md·SOUL.md·USER.md</span><span>결과물과 HANDOFF.md도 새 노드로 복제하지 않음</span>
+    </section>
+    <section class="legend" aria-label="시안 판독 기준">
+      <span><i class="legend-swatch template-swatch"></i>기존 템플릿 흐름</span><span><i class="legend-swatch work-swatch"></i>이번 업무에서 새로 추가</span><span><i class="legend-swatch optional-swatch"></i>나중에 추가 가능</span>
+      <span><i class="legend-line branch-line"></i>기존 흐름에 붙는 확장</span><span><i class="legend-line knowledge-line"></i>PKM 저장·재사용 순환</span>
+    </section>
+    <section class="prototype-viewport" aria-label="기존 흐름과 업무 전용 확장이 합쳐진 구조도">
+      <div class="prototype-canvas" data-integrated-map>
+        <div class="canvas-caption"><strong>한 줄의 기본 흐름</strong><span>위아래의 작은 노드는 새 실행 능력과 선택 확장일 뿐, 두 번째 업무 흐름이 아니에요.</span></div>
+        <div class="template-core" data-template-core><span>기존 템플릿 흐름 · 한 번만 표시</span></div>
+        <svg class="prototype-edges" viewBox="0 0 1470 860" aria-hidden="true">
+          <defs>
+            <marker id="map-arrow" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L8,3 z"></path></marker>
+            <marker id="pkm-arrow" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L8,3 z"></path></marker>
+          </defs>
+          {templateEdges.map((edge) => <polyline class="template-edge" points={edgePoints(edge)} marker-end="url(#map-arrow)"></polyline>)}
+          {branchEdges.map((edge) => <g data-branch-edge><polyline class:list={['branch-edge', { 'optional-edge': edge.optional }]} points={branchPoints(edge)}></polyline></g>)}
+          {knowledgeEdges.map((edge) => (
+            <g data-knowledge-edge>
+              <polyline class="knowledge-edge" points={edgePoints(edge)} marker-end="url(#pkm-arrow)"></polyline>
+              <text class="edge-label" x={edge.labelX} y={edge.labelY}>{edge.label}</text>
+            </g>
+          ))}
+        </svg>
+        {templateNodes.map((node) => (
+          <button type="button" class="prototype-node template-node" data-template-node data-component-id={node.id} style={`--node-x:${node.x}px;--node-y:${node.y}px;--node-w:${node.w}px;--node-h:${node.h}px`}>
+            <span class="node-type">템플릿 고정 자리</span><strong>{node.label}</strong><span class="node-role">{node.role}</span>
+          </button>
+        ))}
+        {workExtensions.map((node) => (
+          <button type="button" class="prototype-node work-node" data-work-node data-component-id={node.id} aria-describedby={`tooltip-${node.id}`} style={`--node-x:${node.x}px;--node-y:${node.y}px;--node-w:${node.w}px;--node-h:${node.h}px`}>
+            <span class="node-topline"><span>{node.type}</span><em>{node.status}</em></span><strong>{node.label}</strong><span class="node-role">{node.role}</span>
+            <span class="node-tooltip" id={`tooltip-${node.id}`} role="tooltip"><b>연결 파일</b>{node.paths.slice(0, 2).map((path) => <span>{path}</span>)}</span>
+          </button>
+        ))}
+        {optionalExtensions.map((node) => (
+          <button type="button" class="prototype-node optional-node" data-optional-node data-component-id={node.id} aria-describedby={`tooltip-${node.id}`} style={`--node-x:${node.x}px;--node-y:${node.y}px;--node-w:${node.w}px;--node-h:${node.h}px`}>
+            <span class="node-topline"><span>{node.type}</span><em>{node.status}</em></span><strong>{node.label}</strong><span class="node-role">{node.role}</span>
+            <span class="node-tooltip" id={`tooltip-${node.id}`} role="tooltip"><b>연결한다면 쓸 위치</b>{node.paths.slice(0, 2).map((path) => <span>{path}</span>)}</span>
+          </button>
+        ))}
+      </div>
+    </section>
+    <aside class="detail-panel" data-detail-panel aria-live="polite">
+      <div><p class="detail-kicker">선택한 구성요소</p><h2 data-detail-title>네모를 눌러 자세히 봐</h2><p data-detail-role>구조는 지도에, 파일 경로와 연결 기준은 여기에 보여줘요.</p></div>
+      <dl><div><dt>구분</dt><dd data-detail-type>—</dd></div><div><dt>상태</dt><dd data-detail-status>—</dd></div><div><dt>붙은 자리</dt><dd data-detail-attachment>—</dd></div></dl>
+      <div class="detail-paths"><h3>포함되거나 연결될 상대경로</h3><ul data-detail-paths><li>네모를 선택하면 여기에서 확인할 수 있어요.</li></ul></div>
+    </aside>
+  </main>
+  <script id="prototype-map-data" type="application/json" set:html={detailData}></script>
+</Base>
+
+<script>
+  const dataElement = document.querySelector('#prototype-map-data');
+  const detailData = dataElement ? JSON.parse(dataElement.textContent ?? '{}') : {};
+  const panel = document.querySelector('[data-detail-panel]');
+  function renderDetail(id) {
+    const detail = detailData[id];
+    if (!detail || !panel) return;
+    panel.querySelector('[data-detail-title]').textContent = detail.label;
+    panel.querySelector('[data-detail-role]').textContent = detail.role;
+    panel.querySelector('[data-detail-type]').textContent = detail.type;
+    panel.querySelector('[data-detail-status]').textContent = detail.status;
+    panel.querySelector('[data-detail-attachment]').textContent = detail.attachTo.length ? detail.attachTo.join(' · ') : '템플릿 구조의 고정 자리';
+    const pathList = panel.querySelector('[data-detail-paths]');
+    pathList.replaceChildren();
+    const paths = detail.paths.length ? detail.paths : ['고정 자리는 파일이 아니라 구성요소가 붙을 위치를 설명해요.'];
+    paths.forEach((path) => { const item = document.createElement('li'); item.textContent = path; pathList.append(item); });
+    document.querySelectorAll('[data-component-id]').forEach((node) => node.toggleAttribute('data-selected', node.getAttribute('data-component-id') === id));
+  }
+  document.querySelectorAll('[data-component-id]').forEach((node) => node.addEventListener('click', () => renderDetail(node.getAttribute('data-component-id'))));
+</script>
+
+<style>
+  .prototype-page{--prototype-node-title-size:1.18rem;position:relative;left:50%;width:min(1680px,calc(100vw - 2.5rem));margin:0 auto;padding:2rem clamp(1rem,2vw,2rem) 4rem;transform:translateX(-50%)}
+  .prototype-header{display:grid;gap:.85rem;margin-bottom:1rem}.prototype-header h1{margin:.25rem 0 .5rem;font-size:clamp(2rem,3vw,3.25rem);letter-spacing:-.045em}.prototype-header p{margin:0;color:var(--muted);font-size:1.08rem}.eyebrow,.detail-kicker{font-size:.8rem!important;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)!important}.prototype-badge{justify-self:start;padding:.65rem .9rem;border:1px solid var(--line);border-radius:999px;color:var(--fg);background:var(--surface);font-weight:750}
+  .instruction-note{display:flex;flex-wrap:wrap;gap:.55rem 1.25rem;margin-bottom:.75rem;padding:.8rem 1rem;border-left:4px solid var(--green-fg);background:var(--green-bg);color:var(--green-fg);font-size:.95rem}.instruction-note strong{color:var(--fg)}
+  .legend{display:flex;flex-wrap:wrap;gap:.8rem 1.5rem;align-items:center;margin-bottom:1rem;padding:.8rem 1rem;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);font-size:.96rem;font-weight:700}.legend span{display:inline-flex;align-items:center;gap:.5rem}.legend-swatch{width:1rem;height:1rem;border:2px solid var(--line);border-radius:.25rem}.template-swatch{background:color-mix(in srgb,var(--surface) 78%,var(--bg))}.work-swatch{background:color-mix(in srgb,var(--green-bg) 65%,var(--surface));border-color:var(--green-fg)}.optional-swatch{border-style:dashed;border-color:var(--amber-fg);background:color-mix(in srgb,var(--amber-bg) 42%,var(--surface))}.legend-line{width:2.25rem;border-top:3px solid var(--fg)}.branch-line{border-top-style:dashed;border-color:var(--green-fg)}.knowledge-line{border-top-style:dashed;border-color:var(--amber-fg)}
+  .prototype-viewport{width:100%;overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);background:color-mix(in srgb,var(--surface) 42%,var(--bg))}.prototype-canvas{position:relative;width:1470px;height:860px;margin:0 auto}.canvas-caption{position:absolute;z-index:3;left:24px;top:18px;display:flex;align-items:baseline;gap:.9rem}.canvas-caption strong{font-size:1.3rem}.canvas-caption span{color:var(--muted)}.template-core{position:absolute;z-index:3;left:40px;top:372px;width:auto;height:auto}.template-core span{display:inline-block;padding:.35rem .6rem;border:1px solid var(--line);border-radius:999px;color:var(--muted);background:var(--surface);font-size:.88rem;font-weight:750}
+  .prototype-edges{position:absolute;inset:0;z-index:1;width:100%;height:100%;overflow:visible;pointer-events:none}.prototype-edges polyline{fill:none;stroke-linecap:round;stroke-linejoin:round}.prototype-edges marker path{fill:var(--fg)}.prototype-edges #pkm-arrow path{fill:var(--amber-fg)}.template-edge{stroke:var(--muted);stroke-width:2.5;opacity:.78}.branch-edge{stroke:var(--green-fg);stroke-width:2.4;stroke-dasharray:8 7;opacity:.78}.optional-edge{stroke:var(--amber-fg);stroke-dasharray:4 8;opacity:.62}.knowledge-edge{stroke:var(--amber-fg);stroke-width:2.7;stroke-dasharray:7 7;opacity:.82}.edge-label{fill:var(--amber-fg);stroke:var(--bg);stroke-width:6px;paint-order:stroke;stroke-linejoin:round;font-size:15px;font-weight:850;letter-spacing:-.01em}
+  .prototype-node{position:absolute;z-index:2;left:var(--node-x);top:var(--node-y);width:var(--node-w);min-height:var(--node-h);padding:.9rem 1rem;border:2px solid var(--line);border-radius:var(--radius);text-align:left;color:var(--fg);background:var(--surface);box-shadow:0 8px 24px color-mix(in srgb,var(--fg) 10%,transparent);cursor:pointer}.prototype-node:hover,.prototype-node:focus-visible,.prototype-node[data-selected]{z-index:5;border-color:var(--accent);outline:none;transform:translateY(-2px)}.prototype-node strong{display:block;margin:.32rem 0 .42rem;font-size:var(--prototype-node-title-size);line-height:1.2;letter-spacing:-.025em}.node-type{color:var(--muted);font-size:.76rem;font-weight:800;letter-spacing:.045em}.node-role{display:block;font-size:.91rem;line-height:1.38;color:color-mix(in srgb,var(--fg) 78%,var(--muted))}.template-node{background:color-mix(in srgb,var(--surface) 82%,var(--bg))}.work-node{border-color:color-mix(in srgb,var(--green-fg) 64%,var(--line));background:color-mix(in srgb,var(--green-bg) 50%,var(--surface))}.optional-node{border-style:dashed;border-color:var(--amber-fg);background:color-mix(in srgb,var(--amber-bg) 38%,var(--surface));box-shadow:none}.node-topline{display:flex;justify-content:space-between;gap:.5rem;align-items:center;color:var(--green-fg);font-size:.75rem;font-weight:850}.optional-node .node-topline{color:var(--amber-fg)}.node-topline em{padding:.12rem .35rem;border-radius:999px;font-style:normal;color:var(--fg);background:color-mix(in srgb,var(--green-bg) 78%,var(--surface));white-space:nowrap}.optional-node .node-topline em{background:color-mix(in srgb,var(--amber-bg) 72%,var(--surface))}
+  .node-tooltip{position:absolute;left:50%;bottom:calc(100% + 10px);display:grid;gap:.22rem;width:max-content;max-width:320px;padding:.7rem .8rem;border:1px solid var(--line);border-radius:.65rem;color:var(--fg);background:var(--bg);box-shadow:0 8px 24px color-mix(in srgb,var(--fg) 12%,transparent);font-size:.82rem;line-height:1.35;opacity:0;visibility:hidden;transform:translate(-50%,4px);transition:opacity 120ms ease,transform 120ms ease;pointer-events:none}.node-tooltip span{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere}.work-node:hover .node-tooltip,.work-node:focus-visible .node-tooltip,.optional-node:hover .node-tooltip,.optional-node:focus-visible .node-tooltip{opacity:1;visibility:visible;transform:translate(-50%,0)}
+  .detail-panel{display:grid;grid-template-columns:minmax(280px,1.2fr) minmax(260px,.9fr) minmax(360px,1.25fr);gap:1.5rem;margin-top:1rem;padding:1.25rem 1.4rem;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface)}.detail-panel h2,.detail-panel h3,.detail-panel p{margin-top:0}.detail-panel h2{margin-bottom:.4rem;font-size:1.45rem}.detail-panel p{margin-bottom:0;color:var(--muted)}.detail-panel dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.6rem;margin:0}.detail-panel dl div{padding:.65rem .75rem;border-radius:.6rem;background:var(--bg)}.detail-panel dt{color:var(--muted);font-size:.78rem;font-weight:800}.detail-panel dd{margin:.25rem 0 0;font-weight:750}.detail-paths h3{margin-bottom:.45rem;font-size:.95rem}.detail-paths ul{margin:0;padding-left:1.2rem}.detail-paths li{margin:.2rem 0;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.88rem;overflow-wrap:anywhere}
+  @media(max-width:900px){.detail-panel{grid-template-columns:1fr}}
+</style>

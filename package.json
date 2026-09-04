@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
+    "map": "astro dev --open /tools/workspace-map",
     "build": "astro build",
     "preview": "astro preview",
     "check": "node scripts/check-structure.mjs",

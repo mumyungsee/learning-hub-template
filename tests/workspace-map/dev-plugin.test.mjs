@@ -48,11 +48,12 @@ test('GET returns a no-store live snapshot', async (t) => {
   assert.equal(result.headers.get('cache-control'), 'no-store');
   assert.match(result.headers.get('content-type'), /^application\/json/);
   const body = JSON.parse(result.body);
-  assert.equal(body.schemaVersion, 1);
+  assert.equal(body.schemaVersion, 3);
+  assert.equal(body.activeWork, null);
   assert.equal(body.mode, 'live');
   assert.ok(Array.isArray(body.nodes));
   assert.ok(Array.isArray(body.edges));
-  assert.ok(Array.isArray(body.views));
+  assert.equal(body.views, undefined);
 });
 
 test('non-GET method is rejected and unrelated route passes through', async () => {
