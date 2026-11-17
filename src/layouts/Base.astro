@@ -144,6 +144,24 @@ const fullTitle = title ? `${title} · ${site.이름}` : site.이름;
         color: var(--muted);
       }
       .prose a { text-decoration: underline; text-underline-offset: 2px; }
+      /* 견본 안내 상자: 글 속에서 <div class="guide"> … </div> 로 감싼 부분. 본문과 섞이지 않게 따로 보인다 */
+      .prose .guide {
+        margin: 1.2rem 0;
+        padding: 0.2rem 1rem 0.2rem;
+        border-radius: 10px;
+        background: var(--amber-bg);
+        color: var(--amber-fg);
+        font-size: 0.92rem;
+      }
+      .prose .guide::before {
+        content: '견본 안내';
+        display: block;
+        margin-top: 0.7rem;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+      }
+      .prose .guide blockquote { border: none; padding: 0; margin: 0.6rem 0; color: inherit; }
 
       .back-link {
         display: inline-block;

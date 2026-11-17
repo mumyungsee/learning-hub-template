@@ -31,117 +31,140 @@ const 챕터들 = await Promise.all(
 );
 
 const total = book.cases.length;
+// 견본 글이 들어 있으면 위쪽에 안내 상자를 하나만 띄우고, 글 속 안내 문구(.guide)는 책에서 뺀다
+const 견본있음 =
+  book.cases.some((e) => (e.data.tags ?? []).includes('견본') || (e.body ?? '').includes('class="guide"')) ||
+  ((서문소스?.body ?? '').includes('class="guide"'));
 const fmt = (d: Date) => d.toISOString().slice(0, 10);
 const 오늘 = new Date().toISOString().slice(0, 10);
 ---
 
 <Base title={`${book.title} — 책으로 보기`} wide>
-  <a href="/ebook" class="back-link">← 내 서재</a>
+  <!-- 어디서 왔는지: 서재에서 책 한 권을 펼친 화면 -->
+  <nav class="crumb">
+    <a href="/ebook">← 서재로 돌아가기</a>
+    <span class="sep">/</span>
+    <span>내 서재</span>
+    <span class="sep">›</span>
+    <strong>{book.title}</strong>
+  </nav>
 
-  <div class="ebook-head">
-    <div>
-      <h1 class="page-title">{book.title}</h1>
-      <p class="page-desc">이 위키의 글이 순서대로 한 권이 됐어요. 지금 {total}꼭지.</p>
-      {!book.책 && (
-        <p class="draft-note">
-          아직 <strong>서재에 안 꽂힌 책</strong>이에요. 나만 미리 볼 수 있어요.
-          프로젝트 위키는 글이 하나라도 있으면 책장에 올라가요.
-          그 밖의 위키는 카드에 <code>책: true</code>를 넣으면 꽂혀요.
-        </p>
-      )}
-    </div>
-    {total > 0 && (
-      <div class="actions">
-        <button id="download-btn" class="btn primary">전자책 내려받기</button>
-        <button id="print-btn" class="btn">PDF로 저장 (인쇄)</button>
-      </div>
-    )}
-  </div>
-
-  {total === 0 ? (
-    <div class="empty">
-      아직 글이 없어요.<br />
-      {book.프로젝트 ? (
-        <> <code>프로젝트: {book.프로젝트}</code> 를 적으면 여기 모여요.</>
-      ) : (
-        <>글을 쓸 때 <code>위키: {wiki}</code>를 달면 여기에 한 꼭지씩 쌓여요.</>
-      )}
-    </div>
-  ) : (
-    <div id="book">
-      <!-- 표지 -->
-      <section class="cover">
-        <h1>{book.title}</h1>
-        {book.summary && <p class="sub">{book.summary}</p>}
-        <p class="sub small">{fmt(book.started)} 부터 · {total}꼭지</p>
-      </section>
-
-      <!-- 서문 = 프로젝트 카드 (왜 만들었고 뭘 하려 했는지) -->
-      {서문내용 && (
-        <section class="part preface">
-          <div class="part-label">서문 · 이 위키는</div>
-          <h2>{book.title}</h2>
-          <div class="prose">{(() => { const C = 서문내용; return <C />; })()}</div>
-        </section>
-      )}
-
-      <!-- 목차 -->
-      <nav class="toc">
-        <h2>목차</h2>
-        {챕터들.map(({ 주차, items }) => (
-          <div class="toc-week">
-            <strong>{주차 > 0 ? `${주차}주차` : '기타'}</strong>
-            <ul>
-              {items.map((e) => <li>{e.data.title}</li>)}
-            </ul>
-          </div>
-        ))}
-      </nav>
-
-      <!-- 주차별 챕터 -->
-      {챕터들.map(({ 주차, items }) => (
-        <div class="part chapter-part">
-          <div class="chapter-cover">
-            <div class="part-label">Chapter</div>
-            <h2>{주차 > 0 ? `${주차}주차` : '기타'}</h2>
-          </div>
-          {items.map((e) => {
-            const C = e.Content;
-            return (
-              <section class="section">
-                <div class="sec-kind">{종류라벨(e.data.종류)}</div>
-                <h3>{e.data.title}</h3>
-                <div class="sec-date">{fmt(e.data.date)}</div>
-                <div class="prose"><C /></div>
-              </section>
-            );
-          })}
-        </div>
-      ))}
+  {!book.책 && (
+    <div class="notice">
+      아직 <strong>서재에 안 꽂힌 책</strong>이에요. 나만 미리 볼 수 있어요.
+      프로젝트 위키는 글이 하나라도 있으면 책장에 올라가요.
+      그 밖의 위키는 카드에 <code>책: true</code>를 넣으면 꽂혀요.
     </div>
   )}
+
+  {견본있음 && (
+    <div class="notice sample">
+      <strong>견본 책이에요.</strong> 템플릿에 들어 있는 견본 글로 만든 책이에요.
+      내 글을 쓰고 견본 글은 지우거나 <code>공개: false</code>로 바꾸면, 이 자리가 내 책이 돼요.
+      (글 속의 견본 안내 문구는 책에서는 빼고 보여 줘요.)
+    </div>
+  )}
+
+  <div id="book">
+    <!-- 1. 표지 -->
+    <section class="cover">
+      <div class="cover-label">{book.프로젝트 ? '프로젝트 전자책' : '위키 전자책'}</div>
+      <h1>{book.title}</h1>
+      {book.summary && <p class="sub">{book.summary}</p>}
+      <p class="sub small">
+        {fmt(book.started)} 부터 · {total}꼭지
+        {book.프로젝트 && <> · <a href={`/projects/${book.프로젝트}`}>프로젝트 보기</a></>}
+        {' · '}<a href={`/wikis/${book.slug}`}>위키에서 보기</a>
+      </p>
+      {total > 0 && (
+        <div class="actions">
+          <button id="download-btn" class="btn primary">전자책 내려받기</button>
+          <button id="print-btn" class="btn">PDF로 저장 (인쇄)</button>
+        </div>
+      )}
+    </section>
+
+    {total === 0 ? (
+      <div class="empty-book">
+        아직 글이 없어요.<br />
+        {book.프로젝트 ? (
+          <> 글 맨 위에 <code>프로젝트: {book.프로젝트}</code> 를 적으면 여기 모여요.</>
+        ) : (
+          <>글을 쓸 때 <code>위키: {wiki}</code>를 달면 여기에 한 꼭지씩 쌓여요.</>
+        )}
+      </div>
+    ) : (
+      <>
+        <!-- 2. 목차 (누르면 그 꼭지로 이동) -->
+        <nav class="toc">
+          <h2>목차</h2>
+          <ol class="toc-list">
+            {서문내용 && <li><a href="#preface">서문 · 이 책을 시작한 이유</a></li>}
+            {챕터들.map(({ 주차, items }) => (
+              <li>
+                <strong>{주차 > 0 ? `${주차}주차` : '기타'}</strong>
+                <ol>
+                  {items.map((e) => <li><a href={`#ch-${e.slug}`}>{e.data.title}</a></li>)}
+                </ol>
+              </li>
+            ))}
+          </ol>
+        </nav>
+
+        <!-- 3. 본문: 서문(프로젝트 카드) → 주차별 꼭지 -->
+        {서문내용 && (
+          <section class="part preface" id="preface">
+            <div class="part-label">서문 · 이 책을 시작한 이유</div>
+            <div class="prose">{(() => { const C = 서문내용; return <C />; })()}</div>
+          </section>
+        )}
+
+        {챕터들.map(({ 주차, items }) => (
+          <div class="part chapter-part">
+            <div class="chapter-cover">
+              <div class="part-label">Chapter</div>
+              <h2>{주차 > 0 ? `${주차}주차` : '기타'}</h2>
+            </div>
+            {items.map((e) => {
+              const C = e.Content;
+              return (
+                <section class="section" id={`ch-${e.slug}`}>
+                  <div class="sec-kind">{종류라벨(e.data.종류)}</div>
+                  <h3>{e.data.title}</h3>
+                  <div class="sec-date">{fmt(e.data.date)}</div>
+                  <div class="prose"><C /></div>
+                </section>
+              );
+            })}
+          </div>
+        ))}
+      </>
+    )}
+  </div>
 </Base>
 
 <style>
-  .back-link {
-    display: inline-block; margin-bottom: 1rem;
-    color: var(--muted); text-decoration: none; font-size: 0.9rem;
+  .crumb {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem;
+    font-size: 0.88rem; color: var(--muted); margin-bottom: 1.2rem;
   }
-  .back-link:hover { color: var(--fg); }
-  .draft-note {
-    margin: 0.5rem 0 0; font-size: 0.85rem; color: var(--muted);
-  }
-  .draft-note code { background: var(--surface); padding: 0.1rem 0.3rem; border-radius: 4px; }
-  .cover .sub.small { font-size: 0.85rem; opacity: 0.75; margin-top: 0.4rem; }
+  .crumb a { color: var(--fg); text-decoration: none; font-weight: 600; }
+  .crumb a:hover { text-decoration: underline; }
+  .crumb .sep { opacity: 0.5; }
+  .crumb strong { color: var(--fg); font-weight: 600; }
 
-  .ebook-head {
-    display: flex; flex-wrap: wrap; align-items: flex-end;
-    justify-content: space-between; gap: 1rem; margin-bottom: 2rem;
+  .notice {
+    border: 1px solid var(--line); border-radius: 10px;
+    padding: 0.8rem 1rem; margin-bottom: 1rem;
+    font-size: 0.88rem; line-height: 1.65; color: var(--muted); background: var(--surface);
   }
-  .actions { display: flex; gap: 0.5rem; }
+  .notice.sample { background: var(--amber-bg); border-color: var(--amber-bg); color: var(--amber-fg); }
+  .notice code { background: rgba(255, 255, 255, 0.6); padding: 0.1rem 0.3rem; border-radius: 4px; }
+
+  .actions { display: flex; justify-content: center; gap: 0.5rem; margin-top: 1.6rem; flex-wrap: wrap; }
   .btn {
     padding: 0.5rem 1rem; border-radius: 999px; border: 1px solid var(--line);
-    background: #fff; font-size: 0.88rem; cursor: pointer; font-family: inherit;
+    background: #fff; font-size: 0.88rem; cursor: pointer; font-family: inherit; color: var(--fg);
   }
   .btn:hover { border-color: var(--muted); }
   .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
@@ -152,15 +175,27 @@ const 오늘 = new Date().toISOString().slice(0, 10);
   .cover { text-align: center; padding: 4rem 2rem; background: var(--surface); border-bottom: 1px solid var(--line); }
   .cover h1 { font-size: 2.2rem; margin: 0 0 0.5rem; }
   .cover .sub { color: var(--muted); margin: 0; }
+  .cover .sub a { color: var(--fg); }
+  .cover-label {
+    display: inline-block; font-size: 0.72rem; letter-spacing: 0.08em;
+    color: var(--muted); border: 1px solid var(--line); border-radius: 999px;
+    padding: 0.15rem 0.7rem; margin-bottom: 1rem; background: var(--bg);
+  }
+  .empty-book { padding: 2.5rem 2rem; text-align: center; color: var(--muted); }
+  .empty-book code { background: var(--surface); padding: 0.1rem 0.3rem; border-radius: 4px; }
+  /* 글 속 견본 안내 문구는 책에서 뺀다 (위쪽 안내 상자 하나로 대신) */
+  #book :global(.guide) { display: none; }
 
   .part-label { font-size: 0.74rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
   .preface { padding: 2.5rem 2rem; border-bottom: 1px solid var(--line); background: var(--surface); }
-  .preface > h2 { margin: 0.3rem 0 1rem; font-size: 1.5rem; border: none; }
 
   .toc { padding: 2rem; border-bottom: 1px solid var(--line); }
   .toc > h2 { margin-top: 0; }
-  .toc-week { margin-bottom: 0.8rem; }
-  .toc-week ul { margin: 0.2rem 0 0; padding-left: 1.2rem; color: var(--muted); }
+  .toc-list { list-style: none; padding: 0; margin: 0; }
+  .toc-list > li { margin-bottom: 0.9rem; }
+  .toc-list ol { margin: 0.3rem 0 0; padding-left: 1.3rem; }
+  .toc-list a { color: var(--fg); text-decoration: none; }
+  .toc-list a:hover { text-decoration: underline; }
 
   .chapter-cover {
     padding: 2rem; text-align: center;
@@ -175,7 +210,7 @@ const 오늘 = new Date().toISOString().slice(0, 10);
   .sec-date { font-size: 0.76rem; color: var(--muted); margin-bottom: 1rem; }
 
   @media print {
-    .ebook-head, header, footer { display: none !important; }
+    .crumb, .notice, .actions, header, footer { display: none !important; }
     #book { border: none; }
     .cover, .toc, .chapter-cover, .preface { page-break-after: always; }
     .section { page-break-before: always; }
@@ -187,6 +222,9 @@ const 오늘 = new Date().toISOString().slice(0, 10);
   btn?.addEventListener('click', () => {
     const book = document.getElementById('book');
     if (!book) return;
+    // 내려받는 책에는 버튼·견본 안내를 빼고 표지·목차·본문만 담는다
+    const copy = book.cloneNode(true);
+    copy.querySelectorAll('.actions, .guide').forEach((n) => n.remove());
     let css = '';
     for (const sheet of Array.from(document.styleSheets)) {
       try { for (const rule of Array.from(sheet.cssRules)) css += rule.cssText + '\n'; }
@@ -197,7 +235,7 @@ const 오늘 = new Date().toISOString().slice(0, 10);
 <title>${bookTitle}</title>
 <style>${css}
 body{max-width:760px;margin:0 auto;padding:2rem;font-family:-apple-system,'Malgun Gothic',sans-serif;line-height:1.7;}
-</style></head><body>${book.outerHTML}</body></html>`;
+</style></head><body>${copy.outerHTML}</body></html>`;
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
