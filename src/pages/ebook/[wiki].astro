@@ -1,24 +1,26 @@
 ---
 import Base from '../../layouts/Base.astro';
-import { getAllBooks, getBook, getProjectCard } from '../../lib/content';
+import { getAllBooks, getBook, getWikiCard, getProjectCard } from '../../lib/content';
 import { 종류라벨 } from '../../lib/labels';
 
-// 프로젝트 하나가 책 한 권. 글은 여전히 /wiki/{slug} 한 곳에만 살고,
-// 여기는 그 글들을 "책 순서"로 다시 꿴 뷰다.
+// 위키 하나가 책 한 권. 글은 여전히 /wiki/{글이름} 한 곳에만 살고,
+// 여기는 그 위키의 글을 "책 순서"로 다시 꿴 뷰다.
 // ★ 책장에 안 꽂힌 책도 주소는 만든다. 주인이 미리 읽어보고 낼지 정해야 하니까.
-//   (책장 노출 여부는 프로젝트 카드의 `책` 토글이 정한다 — 여기서 거르지 않는다)
+//   (책장 노출 여부는 위키 카드의 `책` 토글이 정한다 — 여기서 거르지 않는다)
 export async function getStaticPaths() {
   const books = await getAllBooks();
-  return books.map((b) => ({ params: { project: b.slug } }));
+  return books.map((b) => ({ params: { wiki: b.slug } }));
 }
 
-const { project } = Astro.params;
-const book = await getBook(project!);
+const { wiki } = Astro.params;
+const book = await getBook(wiki!);
 if (!book) return Astro.redirect('/ebook');
 
-// 프로젝트 카드 본문이 이 책의 서문이 된다
-const 카드 = await getProjectCard(project!);
-const 서문내용 = 카드 ? (await 카드.render()).Content : null;
+// 서문: 위키 카드 본문, 없으면 프로젝트 카드
+const 위키카드 = await getWikiCard(wiki!);
+const 프로젝트카드 = book.프로젝트 ? await getProjectCard(book.프로젝트) : null;
+const 서문소스 = 위키카드 ?? 프로젝트카드;
+const 서문내용 = 서문소스 ? (await 서문소스.render()).Content : null;
 
 const renderEntry = async (e: any) => {
   const { Content } = await e.render();
@@ -39,11 +41,11 @@ const 오늘 = new Date().toISOString().slice(0, 10);
   <div class="ebook-head">
     <div>
       <h1 class="page-title">{book.title}</h1>
-      <p class="page-desc">이 프로젝트를 만들며 쓴 글이 순서대로 한 권이 됐어요. 지금 {total}꼭지.</p>
+      <p class="page-desc">이 위키의 글이 순서대로 한 권이 됐어요. 지금 {total}꼭지.</p>
       {!book.책 && (
         <p class="draft-note">
           아직 <strong>서재에 안 꽂힌 책</strong>이에요. 나만 보는 중이고,
-          카드에 <code>책: true</code>를 넣으면 책장에 올라가요.
+          위키 카드에 <code>책: true</code>를 넣으면 책장에 올라가요.
         </p>
       )}
     </div>
@@ -57,8 +59,8 @@ const 오늘 = new Date().toISOString().slice(0, 10);
 
   {total === 0 ? (
     <div class="empty">
-      아직 이 프로젝트의 글이 없어요.<br />
-      사례글을 쓸 때 <code>프로젝트: {project}</code>를 달면 여기에 한 꼭지씩 쌓여요.
+      아직 이 위키의 글이 없어요.<br />
+      글을 쓸 때 <code>위키: {wiki}</code>를 달면 여기에 한 꼭지씩 쌓여요.
     </div>
   ) : (
     <div id="book">
@@ -72,7 +74,7 @@ const 오늘 = new Date().toISOString().slice(0, 10);
       <!-- 서문 = 프로젝트 카드 (왜 만들었고 뭘 하려 했는지) -->
       {서문내용 && (
         <section class="part preface">
-          <div class="part-label">서문 · 이 프로젝트는</div>
+          <div class="part-label">서문 · 이 위키는</div>
           <h2>{book.title}</h2>
           <div class="prose">{(() => { const C = 서문내용; return <C />; })()}</div>
         </section>

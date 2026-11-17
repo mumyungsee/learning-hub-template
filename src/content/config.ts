@@ -4,7 +4,8 @@ import { defineCollection, z } from 'astro:content';
 // 이 파일은 "내 사이트에 어떤 종류의 글이 들어가는지"를 정하는 설정이야.
 // 수강생은 여기 손댈 일 거의 없어. 아래 폴더에 마크다운(.md)을 넣으면 사이트에 자동으로 나타나.
 //
-//   src/content/wiki/      → 학습위키 (로드맵·개념·사례·회고 다 여기)  ★ 제일 많이 쓰는 곳
+//   src/content/wiki/      → 위키 글 (로드맵·계획·개념·사례·회고)  ★ 제일 많이 쓰는 곳
+//   src/content/wikis/     → 위키 카드 (위키를 하나 더 만들 때 파일 하나만)
 //   src/content/projects/  → 내 프로젝트 (카드로 전시)
 //   src/content/journal/   → 저널 (개인 학습일지, 사이트엔 안 보임)
 // ─────────────────────────────────────────────────────────────
@@ -12,8 +13,7 @@ import { defineCollection, z } from 'astro:content';
 // ★ 파일 이름은 영문·숫자·하이픈(-)으로! (예: w1-case-day1.md)
 //   한글 파일 이름은 인터넷 주소로 바뀔 때 문제가 생겨. 제목은 아래 title에 한글로 쓰면 돼.
 
-// 1) 학습위키 — 한 달 동안 배운 게 주차별로 쌓이는 곳.
-//    글 하나하나가 위키의 한 페이지이자, 나중에 전자책의 한 꼭지가 돼.
+// 1) 위키 글 — 한 페이지. 나중에 그 위키의 전자책 한 꼭지가 돼.
 const wiki = defineCollection({
   type: 'content',
   schema: z.object({
@@ -24,7 +24,7 @@ const wiki = defineCollection({
     // ★ 이 두 개가 위키를 자동으로 정리해줘 ─────────────
     // 종류: 이 글이 뭔지. 좌측 목록에서 순서가 이걸로 정해짐 (로드맵 → 계획 → 개념 → 사례 → 회고)
     //   로드맵 = 4주 전체 지도(맨 앞 서문 자리, 한 번만)
-    //   계획   = 그 주에 뭘 어디까지 만들지 정한 문서. 미니 PRD·실행 로드맵·완성 기준·다음 30일이 여기.
+    //   계획   = 그 주에 뭘 어디까지 만들지 정한 문서. 짧은 계획·실행 순서·완성 기준·다음 30일이 여기.
     //            매일 새 대화로 시작하니 이런 건 대화에 두면 사라진다 → 반드시 파일로 남긴다.
     종류: z.enum(['로드맵', '계획', '개념', '사례', '회고']).default('사례'),
     // 주차: 몇 주차 글인지 (1~4). 로드맵은 주차가 없어도 돼(맨 위 서문 자리).
@@ -32,8 +32,25 @@ const wiki = defineCollection({
     // ────────────────────────────────────────────────
 
     tags: z.array(z.string()).optional(),   // 부가 태그 (선택)
-    프로젝트: z.string().optional(),          // '사례' 글이면, 어떤 프로젝트 글인지 (그 프로젝트 상세에 연재로 붙음)
+    프로젝트: z.string().optional(),          // 어느 프로젝트에 속하는지 (프로젝트 페이지 작업 기록)
+    // 어느 위키에 넣을지. 파일 이름은 src/content/wikis/ 안의 이름과 같게.
+    // 이 칸이 없으면 '기본 위키'(default)에 들어가요.
+    위키: z.string().optional(),
     공개: z.boolean().default(true),         // false면 사이트에 안 보임
+  }),
+});
+
+// 1-2) 위키 카드 — 위키를 하나 더 만들 때 이 폴더에 파일 하나만 만들면 돼.
+//     전자책은 위키마다 한 권. 책장에 꽂을지는 아래 `책` 칸으로 정함.
+const wikis = defineCollection({
+  type: 'content',
+  schema: z.object({
+    title: z.string(),
+    date: z.coerce.date(),
+    summary: z.string().optional(),
+    프로젝트: z.string().optional(),  // 어느 프로젝트의 위키인지 (없어도 됨)
+    책: z.boolean().default(false),   // true면 서재 책장에 꽂힘
+    공개: z.boolean().default(true),
   }),
 });
 
@@ -48,9 +65,8 @@ const projects = defineCollection({
     tags: z.array(z.string()).optional(),
     링크: z.string().optional(),   // 배포한 앱·결과물 주소 (있으면 "체험하기" 버튼)
     공개: z.boolean().default(true),
-    // 책으로 낼지 여부. true면 서재 책장에 표지가 꽂히고, false면 안 꽂힌다.
-    // (꺼도 사례글은 그대로 프로젝트 밑에 작업 기록으로 달린다 — 글이 사라지는 게 아니다)
-    // 기본값 false인 이유: 글 한두 개로 책을 내면 민망하다. 쌓인 뒤 주인이 켜는 게 맞다.
+    // 예전 방식(하위 호환): 위키 카드가 없을 때만 쓰여요.
+    // 새 글은 위키 카드의 `책` 칸을 쓰세요.
     책: z.boolean().default(false),
   }),
 });
@@ -77,4 +93,4 @@ const landing = defineCollection({
   }),
 });
 
-export const collections = { wiki, projects, journal, landing };
+export const collections = { wiki, wikis, projects, journal, landing };

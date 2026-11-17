@@ -4,9 +4,9 @@ import BookCover from '../../components/BookCover.astro';
 import { getBooks, getStrayEntries } from '../../lib/content';
 import { 종류라벨 } from '../../lib/labels';
 
-// 서재 — 프로젝트 하나가 책 한 권.
-// 글은 /wiki/{slug} 한 곳에만 살고, 책은 그 글들을 다른 순서로 꿴 뷰일 뿐이다.
-// ★ 책장에 꽂을지는 주인이 정한다 (프로젝트 카드의 `책: true`).
+// 서재 — 위키 하나가 책 한 권.
+// 글은 /wiki/{slug} 한 곳에만 살고, 책은 그 위키의 글을 다른 순서로 꿴 뷰일 뿐이다.
+// ★ 책장에 꽂을지는 주인이 정한다 (위키 카드의 `책: true`).
 //   "몇 편 이상이면 자동으로 책" 같은 기계 규칙을 두지 않는 이유 — 글 한두 개로
 //   책이 나오면 민망하고, 언제 낼지는 사람이 판단할 일이기 때문.
 const books = await getBooks();
@@ -18,15 +18,15 @@ const fmt = (d: Date) => d.toISOString().slice(0, 10);
 <Base title="내 서재" wide>
   <h1 class="page-title">내 서재</h1>
   <p class="page-desc">
-    프로젝트 하나가 <strong>책 한 권</strong>이 돼요. 만드는 동안 쓴 글이 순서대로 쌓여 목차가 되고요.
-    낼지 말지는 카드의 <code>책</code> 한 줄로 내가 정해요.
+    위키 하나가 <strong>책 한 권</strong>이 돼요. 그 위키에 쓴 글이 순서대로 쌓여 목차가 되고요.
+    낼지 말지는 위키 카드의 <code>책</code> 한 줄로 내가 정해요.
   </p>
 
   {books.length === 0 ? (
     <div class="empty">
       <p>아직 책장에 꽂힌 책이 없어요.</p>
       <p class="how">
-        <a href="/projects">프로젝트</a> 카드 맨 위에 <code>책: true</code>를 넣으면 그 프로젝트가 책으로 올라와요.<br />
+        <a href="/wiki">위키</a> 카드(<code>src/content/wikis/</code>)에 <code>책: true</code>를 넣으면 그 위키가 책으로 올라와요.<br />
         <strong>글이 얼마나 쌓였든 상관없어요</strong> — 낼 때를 정하는 건 나예요.
       </p>
     </div>
@@ -57,8 +57,7 @@ const fmt = (d: Date) => d.toISOString().slice(0, 10);
     <section class="strays">
       <h2>그 밖의 기록</h2>
       <p class="hint">
-        아직 어느 책에도 안 꽂힌 글이에요. 학습 로드맵·개념 페이지·주차 회고처럼
-        프로젝트에 매이지 않은 글이 여기 모여요.
+        아직 서재에 꽂힌 책에 안 들어간 글이에요. 기본 위키처럼 <code>책: false</code>인 위키의 글이 여기 모여요.
       </p>
       <ul>
         {strays.map((e) => (
@@ -72,7 +71,7 @@ const fmt = (d: Date) => d.toISOString().slice(0, 10);
         ))}
       </ul>
       <p class="hint tip">
-        💡 사례글인데 여기 있다면 <code>프로젝트:</code> 줄이 빠진 거예요. 붙이면 그 책으로 들어가요.
+        💡 특정 위키의 책에 넣고 싶다면 글에 <code>위키: (위키 파일 이름)</code>을 달고, 그 위키 카드에 <code>책: true</code>를 넣으면 돼요.
       </p>
     </section>
   )}

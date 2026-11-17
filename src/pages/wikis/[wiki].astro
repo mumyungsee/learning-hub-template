@@ -1,0 +1,62 @@
+---
+import WikiLayout from '../../layouts/WikiLayout.astro';
+import { getWikiSets, getWikiGrouped, getWikiSet } from '../../lib/content';
+
+export async function getStaticPaths() {
+  const sets = await getWikiSets();
+  return sets.map((s) => ({ params: { wiki: s.slug } }));
+}
+
+const { wiki } = Astro.params;
+const set = await getWikiSet(wiki!);
+if (!set) return Astro.redirect('/wiki');
+const { roadmap, weeks } = await getWikiGrouped(set.slug);
+const total = weeks.reduce((n, w) => n + w.items.length, 0) + roadmap.length;
+const 첫글 = roadmap[0] ?? weeks[0]?.items[0];
+---
+
+<WikiLayout title={set.title} description={set.summary} wikiSlug={set.slug}>
+  <div class="intro">
+    <p class="crumb"><a href="/wiki">학습위키</a> · {set.title}</p>
+    <h1 class="page-title">{set.title}</h1>
+    {set.summary && <p class="page-desc">{set.summary}</p>}
+    <p class="meta">
+      글 {total}개
+      {set.책 && <> · <a href={`/ebook/${set.slug}`}>책으로 보기</a></>}
+    </p>
+
+    {total === 0 ? (
+      <div class="empty">
+        아직 이 위키의 글이 없어요. 글 맨 위에 <code>위키: {set.slug}</code>를 넣으면 여기로 들어와요.
+      </div>
+    ) : (
+      첫글 && (
+        <a href={`/wiki/${첫글.slug}`} class="start-btn">첫 글부터 보기 →</a>
+      )
+    )}
+  </div>
+</WikiLayout>
+
+<style>
+  .crumb { font-size: 0.85rem; color: var(--muted); margin: 0 0 0.5rem; }
+  .crumb a { color: inherit; }
+  .page-desc { color: var(--muted); }
+  .meta { font-size: 0.85rem; color: var(--muted); margin: 0 0 1.2rem; }
+  .meta a { color: var(--fg); }
+  .start-btn {
+    display: inline-block;
+    padding: 0.55rem 1.2rem;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .empty {
+    border: 1px dashed var(--line);
+    border-radius: var(--radius);
+    padding: 1.5rem 1rem;
+    color: var(--muted);
+  }
+  code { background: var(--surface); padding: 0.1rem 0.3rem; border-radius: 4px; }
+</style>

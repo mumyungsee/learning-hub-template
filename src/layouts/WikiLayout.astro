@@ -8,15 +8,16 @@ export interface Props {
   title?: string;
   description?: string;
   activeSlug?: string;   // 지금 보는 글 (좌측 강조)
+  wikiSlug?: string;     // 지금 보는 위키 (왼쪽 목록을 이 위키만)
   hasTOC?: boolean;      // 우측 세부목차 슬롯을 쓸지
 }
-const { title, description, activeSlug, hasTOC = false } = Astro.props;
+const { title, description, activeSlug, wikiSlug, hasTOC = false } = Astro.props;
 ---
 
 <Base title={title} description={description} full>
   <div class:list={['wiki-grid', { 'has-toc': hasTOC }]}>
     <div class="col-side">
-      <WikiSidebar activeSlug={activeSlug} />
+      <WikiSidebar activeSlug={activeSlug} wikiSlug={wikiSlug} />
     </div>
 
     <div class="col-main">
