@@ -19,7 +19,7 @@ description: 학습허브 사이트의 화면·기능을 고치거나 새로 붙
 
 | 자리 | 무엇 | 주인이 손대나 |
 |---|---|---|
-| `src/content/` | **글** — 학습일지·사례글·개념·프로젝트 카드 | **매일 손댐** (마음껏) |
+| `src/content/` | **글** — 학습일지·사례글·개념·프로젝트 카드 | **자주 손댐** (마음껏) |
 | `src/content/config.ts` | 글에 어떤 항목이 들어가는지 정하는 곳 | 가끔 (항목 추가할 때) |
 | `src/lib/` | **글을 불러오고 정렬하는 곳** | 거의 안 함 |
 | `src/pages/` · `src/components/` | 화면 | 꾸밀 때 |
@@ -133,7 +133,7 @@ npm run build
 
 | 바꾸려는 것 | 같이 고칠 곳 |
 |---|---|
-| 글 폴더 이름 (`wiki` → 다른 이름) | `src/content/config.ts` · `src/lib/content.ts` · 화면 파일들 · `.claude/skills/` 안의 스킬들 · `.gitignore` |
+| 글 폴더 이름 (`wiki` → 다른 이름) | `src/content/config.ts` · `src/lib/content.ts` · 화면 파일들 · `.agents/skills/`·`.claude/skills/` 안의 스킬들 · `.gitignore` |
 | 글의 항목 **추가** | `src/content/config.ts` (+ 화면에 보이게 하려면 그 화면) |
 | 글의 항목 **삭제** | ★ **먼저 글에서 그 줄을 지우고**, 그다음 config에서 뺍니다. 순서가 반대면 이미 쓴 글이 전부 오류가 납니다. (당장 지우기 싫으면 `.optional()`로 바꿔 두면 있어도 없어도 됩니다) |
 
