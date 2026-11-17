@@ -26,7 +26,7 @@ SOFTWARE.
 
   적용됨 — 템플릿의 코드와 구조
     src/ 아래의 코드, 레이아웃, 컴포넌트, 설정 파일,
-    .claude/skills/ 의 스킬 문서, README 등 템플릿에 원래 들어 있던 것들.
+    .agents/skills/·.claude/skills/ 의 스킬 문서, README 등 템플릿에 원래 들어 있던 것들.
 
   적용되지 않음 — 이 템플릿으로 만든 당신의 글
     src/content/ 에 당신이 직접 쓴 학습일지, 사례글, 개념 페이지,
