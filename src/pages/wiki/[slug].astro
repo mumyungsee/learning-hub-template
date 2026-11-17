@@ -2,7 +2,7 @@
 import WikiLayout from '../../layouts/WikiLayout.astro';
 import Prose from '../../components/Prose.astro';
 import TOC from '../../components/TOC.astro';
-import { getWiki, getProjects, extractHeadings, entryWikiSlug, getWikiSet } from '../../lib/content';
+import { getWiki, getProjects, extractHeadings, entryWikiSlug, getWikiSet, getWikiSets } from '../../lib/content';
 import { 종류라벨 } from '../../lib/labels';
 
 export async function getStaticPaths() {
@@ -14,7 +14,7 @@ const { entry } = Astro.props;
 const { Content } = await entry.render();
 const headings = extractHeadings(entry.body);
 const fmt = (d: Date) => d.toISOString().slice(0, 10);
-const wikiSlug = entryWikiSlug(entry);
+const wikiSlug = entryWikiSlug(entry, await getWikiSets());
 const wikiSet = await getWikiSet(wikiSlug);
 
 // 사례글이면 소속 프로젝트 역링크

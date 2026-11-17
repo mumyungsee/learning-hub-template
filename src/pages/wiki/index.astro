@@ -1,43 +1,44 @@
 ---
 import WikiLayout from '../../layouts/WikiLayout.astro';
-import { getWikiSets, getWikiGrouped, DEFAULT_WIKI_SLUG } from '../../lib/content';
+import { getWikiSets, getWikiGrouped, wikiPageHref } from '../../lib/content';
 
 const sets = await getWikiSets();
 const 여러개 = sets.length > 1;
-const { roadmap, weeks } = await getWikiGrouped(여러개 ? undefined : (sets[0]?.slug ?? DEFAULT_WIKI_SLUG));
-const totalAll = 여러개
-  ? null
-  : weeks.reduce((n, w) => n + w.items.length, 0) + roadmap.length;
+const 하나만 = !여러개 ? sets[0] : null;
+const { roadmap, weeks } = 하나만
+  ? await getWikiGrouped(하나만.slug)
+  : { roadmap: [], weeks: [] };
+const totalAll = 하나만
+  ? weeks.reduce((n, w) => n + w.items.length, 0) + roadmap.length
+  : null;
 const 첫글 = roadmap[0] ?? weeks[0]?.items[0];
 ---
 
-<WikiLayout title="학습위키" description="주제별로 나눈 위키와, 주차별로 쌓인 글">
+<WikiLayout title="학습위키" description="프로젝트마다 생긴 위키와, 주차별로 쌓인 글">
   <div class="intro">
     <h1 class="page-title">학습위키</h1>
     <p class="page-desc">
-      {여러개
-        ? '위키를 여러 개 둘 수 있어요. 하나를 고르면 그 글이 열려요. 위키마다 전자책도 한 권씩 만들 수 있어요.'
-        : <>배운 것이 주차별로 여기 쌓여요. 지금까지 <strong>{totalAll}개</strong> 글이 모였어요. 왼쪽 목록에서 글을 고르면 이 자리에 본문이 열려요.</>
-      }
+      프로젝트 카드를 만들면 위키와 전자책이 같이 생겨요. 하나를 고르면 그 글이 열려요.
     </p>
     <p class="how">
-      위키를 하나 더 만들려면 <code>src/content/wikis/</code> 안에 파일 하나만 만들면 돼요.
-      글에는 <code>위키: (파일 이름)</code> 한 줄만 넣으면 됩니다.
+      글 맨 위에 <code>프로젝트: (프로젝트 파일 이름)</code>만 적으면 그 프로젝트 위키로 들어가요.
+      프로젝트와 상관없는 위키를 더 만들 때만 <code>src/content/wikis/</code>에 파일을 추가하고,
+      글에 <code>위키: (파일 이름)</code>을 달면 돼요.
+      둘 다 안 단 글은 <strong>기본 위키</strong>에 모여요.
     </p>
 
-    {여러개 && (
-      <div class="wiki-grid">
-        {sets.map((s) => (
-          <a class="wiki-card" href={s.slug === DEFAULT_WIKI_SLUG && s.implicit ? '/wiki' : `/wikis/${s.slug}`}>
-            <strong>{s.title}</strong>
-            {s.summary && <span class="sum">{s.summary}</span>}
-            {s.책 && <span class="book">서재에 꽂힌 책</span>}
-          </a>
-        ))}
-      </div>
-    )}
+    <div class="wiki-grid">
+      {sets.map((s) => (
+        <a class="wiki-card" href={wikiPageHref(s)}>
+          <strong>{s.title}</strong>
+          {s.summary && <span class="sum">{s.summary}</span>}
+          {s.프로젝트 && <span class="proj">프로젝트 위키</span>}
+          {s.책 && <span class="book">서재에 꽂힌 책</span>}
+        </a>
+      ))}
+    </div>
 
-    {!여러개 && (
+    {하나만 && (
       <>
         {totalAll === 0 ? (
           <div class="empty">
@@ -96,6 +97,7 @@ const 첫글 = roadmap[0] ?? weeks[0]?.items[0];
   }
   .wiki-card:hover { border-color: var(--muted); }
   .wiki-card .sum { font-size: 0.85rem; color: var(--muted); }
+  .wiki-card .proj { font-size: 0.75rem; color: var(--muted); }
   .wiki-card .book { font-size: 0.75rem; color: var(--green-fg); }
   .start-btn {
     display: inline-block;

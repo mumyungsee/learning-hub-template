@@ -1,6 +1,6 @@
 ---
 // 위키 좌측 목록 — 지금 보는 위키의 글이 주차별로 쌓여.
-import { getWikiGrouped, getWikiSets, DEFAULT_WIKI_SLUG } from '../lib/content';
+import { getWikiGrouped, getWikiSets, wikiPageHref } from '../lib/content';
 import { 종류라벨 } from '../lib/labels';
 
 export interface Props {
@@ -24,7 +24,7 @@ const 여러개 = sets.length > 1;
     <nav class="wiki-switch">
       {sets.map((s) => (
         <a
-          href={s.slug === DEFAULT_WIKI_SLUG && s.implicit ? '/wiki' : `/wikis/${s.slug}`}
+          href={wikiPageHref(s)}
           class:list={['wiki-item', { active: s.slug === current }]}
         >
           {s.title}

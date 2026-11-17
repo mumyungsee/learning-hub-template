@@ -11,7 +11,7 @@ const fmt = (d: Date) => d.toISOString().slice(0, 10);
   <p class="page-desc">내가 만드는 것들. 다 만들면 <code>status</code>를 <code>완성</code>으로 바꾸면 배지가 초록으로 바뀌어요.</p>
 
   {projects.length === 0 ? (
-    <div class="empty">아직 공개된 프로젝트가 없어요. 처음 화면이 비어 보여도 오류가 아니에요. 견본 카드는 <code>공개: false</code>라 안 나와요. <code>src/content/projects/</code>에 내 글을 넣거나, 견본의 <code>공개: true</code>로 바꾸면 여기에 나타나요.</div>
+    <div class="empty">아직 공개된 프로젝트가 없어요. 처음 화면이 비어 보여도 오류가 아니에요. <code>src/content/projects/</code>에 카드를 만들면 여기에 나타나고, 위키와 전자책도 같이 생겨요. 견본을 숨기려면 <code>공개: false</code>로 바꾸면 돼요.</div>
   ) : (
     <div class="card-grid">
       {projects.map((p) => (

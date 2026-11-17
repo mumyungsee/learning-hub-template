@@ -22,12 +22,20 @@ const 첫글 = roadmap[0] ?? weeks[0]?.items[0];
     {set.summary && <p class="page-desc">{set.summary}</p>}
     <p class="meta">
       글 {total}개
-      {set.책 && <> · <a href={`/ebook/${set.slug}`}>책으로 보기</a></>}
+      <> · <a href={`/ebook/${set.slug}`}>책으로 보기</a></>
     </p>
 
     {total === 0 ? (
       <div class="empty">
-        아직 이 위키의 글이 없어요. 글 맨 위에 <code>위키: {set.slug}</code>를 넣으면 여기로 들어와요.
+        {set.프로젝트 ? (
+          <>
+            아직 글이 없어요. <code>프로젝트: {set.프로젝트}</code> 를 적으면 여기 모여요.
+          </>
+        ) : (
+          <>
+            아직 이 위키의 글이 없어요. 글 맨 위에 <code>위키: {set.slug}</code>를 넣으면 여기로 들어와요.
+          </>
+        )}
       </div>
     ) : (
       첫글 && (

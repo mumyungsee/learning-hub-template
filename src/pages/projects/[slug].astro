@@ -40,9 +40,11 @@ const 완성 = entry.data.status === '완성';
     <Content />
   </Prose>
 
-  {wikis.length > 0 && (
-    <section class="wikis">
-      <h2>이 프로젝트의 위키</h2>
+  <section class="wikis">
+    <h2>이 프로젝트의 위키 · 전자책</h2>
+    {wikis.length === 0 ? (
+      <p class="shelf-hint">아직 이 프로젝트의 위키가 없어요.</p>
+    ) : (
       <ul>
         {wikis.map((w) => (
           <li>
@@ -50,18 +52,18 @@ const 완성 = entry.data.status === '완성';
               <strong>{w.title}</strong>
               {w.summary && <span class="sub"> — {w.summary}</span>}
             </a>
-            {w.책 && (
-              <a class="book" href={`/ebook/${w.slug}`}>책으로 보기 →</a>
-            )}
+            <a class="book" href={`/ebook/${w.slug}`}>책으로 보기 →</a>
           </li>
         ))}
       </ul>
-      <p class="shelf-hint">
-        위키를 하나 더 만들려면 <code>src/content/wikis/</code>에 파일 하나를 추가하고,
-        <code>프로젝트: {entry.slug}</code>를 넣으면 돼요. 전자책은 위키 카드의 <code>책: true</code>로 꽂아요.
-      </p>
-    </section>
-  )}
+    )}
+    <p class="shelf-hint">
+      프로젝트 카드를 만들면 위키와 전자책이 같이 생겨요.
+      글 맨 위에 <code>프로젝트: {entry.slug}</code>를 적으면 이 위키에 모여요.
+      제목을 바꾸거나, 프로젝트와 상관없는 위키를 더 만들 때만
+      <code>src/content/wikis/</code>에 파일을 추가하면 돼요.
+    </p>
+  </section>
 
   <!-- 이 프로젝트에 엮인 사례글 연재 -->
   {cases.length > 0 && (

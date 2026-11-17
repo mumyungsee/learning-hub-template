@@ -44,8 +44,9 @@ const 오늘 = new Date().toISOString().slice(0, 10);
       <p class="page-desc">이 위키의 글이 순서대로 한 권이 됐어요. 지금 {total}꼭지.</p>
       {!book.책 && (
         <p class="draft-note">
-          아직 <strong>서재에 안 꽂힌 책</strong>이에요. 나만 보는 중이고,
-          위키 카드에 <code>책: true</code>를 넣으면 책장에 올라가요.
+          아직 <strong>서재에 안 꽂힌 책</strong>이에요. 나만 미리 볼 수 있어요.
+          프로젝트 위키는 글이 하나라도 있으면 책장에 올라가요.
+          그 밖의 위키는 카드에 <code>책: true</code>를 넣으면 꽂혀요.
         </p>
       )}
     </div>
@@ -59,8 +60,12 @@ const 오늘 = new Date().toISOString().slice(0, 10);
 
   {total === 0 ? (
     <div class="empty">
-      아직 이 위키의 글이 없어요.<br />
-      글을 쓸 때 <code>위키: {wiki}</code>를 달면 여기에 한 꼭지씩 쌓여요.
+      아직 글이 없어요.<br />
+      {book.프로젝트 ? (
+        <> <code>프로젝트: {book.프로젝트}</code> 를 적으면 여기 모여요.</>
+      ) : (
+        <>글을 쓸 때 <code>위키: {wiki}</code>를 달면 여기에 한 꼭지씩 쌓여요.</>
+      )}
     </div>
   ) : (
     <div id="book">

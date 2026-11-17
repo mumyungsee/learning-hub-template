@@ -2,7 +2,7 @@
 
 일을 시작하기 전에 이 폴더의 `SOUL.md`와 `USER.md`를 읽어요. 수업 공통 규칙은 `rules/class-rules.md`를 참고해요.
 
-- 글은 `src/content/` 안에 넣어요. 위키 글은 `src/content/wiki/`, 위키를 하나 더 만들 때는 `src/content/wikis/`에 파일 하나, 글에는 `위키: (파일 이름)` 한 줄이면 됩니다.
+- 글은 `src/content/` 안에 넣어요. 프로젝트 카드(`src/content/projects/`)를 만들면 위키와 전자책이 같이 생겨요. 위키 글은 `src/content/wiki/`에 두고, 글에 `프로젝트: (프로젝트 파일 이름)`만 적으면 그 위키로 모여요. 프로젝트와 상관없는 위키를 더 만들 때만 `src/content/wikis/`에 파일을 추가하고 글에 `위키: (파일 이름)`을 달면 됩니다.
 - 자주 하는 일의 순서는 `.claude/skills/`에 있어요. 수강생이 "오늘 학습일지 작성해줘"처럼 말하면 해당 설명서를 읽고 그대로 진행해요.
 - 화면 데이터는 `src/lib/content.ts`에서만 불러요. 사이트를 고친 뒤에는 `npm run check`와 `npm run build`로 확인해요.
 - 모르는 것은 추측해서 파일을 덮지 않아요. 먼저 물어보거나, 이미 있는 글을 읽고 가장 작은 수정만 해요.

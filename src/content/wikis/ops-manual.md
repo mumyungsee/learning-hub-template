@@ -1,10 +1,9 @@
 ---
 title: 운영 메모
 date: 2026-11-17
-summary: 같은 프로젝트의 두 번째 위키 견본.
-프로젝트: my-first-project
+summary: 프로젝트와 별도로 만든 또 하나의 위키 견본.
 책: true
 공개: true
 ---
 
-여행 메모와 다른 위키예요. 전자책도 따로 `/ebook/ops-manual` 한 권이 나와요.
+여행 메모와 다른, 프로젝트와 상관없는 위키 견본이에요. 글에 `위키: ops-manual`을 달면 여기로 들어와요. 전자책도 따로 `/ebook/ops-manual` 한 권이 나와요.
