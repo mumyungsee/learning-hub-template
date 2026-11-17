@@ -47,7 +47,7 @@ const fmt = (d: Date) => d.toISOString().slice(0, 10);
       <a href="/projects" class="more">전체 보기 →</a>
     </div>
     {projects.length === 0 ? (
-      <div class="empty">아직 프로젝트가 없어요.</div>
+      <div class="empty">아직 공개된 프로젝트가 없어요. 처음 화면이 비어 보여도 오류가 아니에요. 견본은 <code>공개: false</code>라 안 나오고, 내 프로젝트를 만들거나 견본을 공개로 바꾸면 여기에 나타나요.</div>
     ) : (
       <div class="card-grid">
         {projects.map((p) => (
@@ -67,7 +67,7 @@ const fmt = (d: Date) => d.toISOString().slice(0, 10);
       <a href="/wiki" class="more">전체 보기 →</a>
     </div>
     {recent.length === 0 ? (
-      <div class="empty">배운 것이 위키에 쌓여요.</div>
+      <div class="empty">아직 공개된 위키 글이 없어요. 처음에는 비어 보여도 정상이에요. 글을 하나 만들면 여기에 쌓여요.</div>
     ) : (
       <ul class="list">
         {recent.map((c) => (
