@@ -1,19 +1,53 @@
 ---
-// 위키 좌측 목록 — 로드맵(맨 위) + 주차별로 글이 쌓여.
-// 챌린지를 진행할수록 여기가 세로로 길어지면서 "위키가 자란다".
-import { getWikiGrouped } from '../lib/content';
+// 위키 좌측 목록 — 지금 보는 위키의 글이 주차별로 쌓여.
+import { getWikiGrouped, getWikiSets, wikiPageHref } from '../lib/content';
 import { 종류라벨 } from '../lib/labels';
 
 export interface Props {
   activeSlug?: string;   // 지금 보고 있는 글 (좌측에서 강조 표시)
+  wikiSlug?: string;     // 지금 보고 있는 위키
 }
-const { activeSlug } = Astro.props;
-const { roadmap, weeks } = await getWikiGrouped();
-
+const { activeSlug, wikiSlug } = Astro.props;
+const sets = await getWikiSets();
+const current = wikiSlug ?? (sets.length === 1 ? sets[0].slug : undefined);
+const { roadmap, weeks } = current
+  ? await getWikiGrouped(current)
+  : { roadmap: [], weeks: [] };
+const currentSet = current ? sets.find((s) => s.slug === current) : null;
+const 여러개 = sets.length > 1;
+// 위키가 하나뿐이면 목록 화면에서도 그 위키 메뉴를 바로 보여 준다
 ---
 
 <aside class="wiki-side">
-  <a href="/wiki" class="side-home">학습위키</a>
+  {currentSet ? (
+    <>
+      <!-- 한 위키 안에서는 그 위키의 메뉴만. 다른 위키로 가는 건 위쪽 작은 선택 칸에서만. -->
+      <div class="side-top">
+        <a href="/wiki" class="up">← 학습위키 전체</a>
+        {여러개 && (
+          <details class="switch">
+            <summary>다른 위키로 ▾</summary>
+            <nav class="switch-list">
+              {sets.filter((s) => s.slug !== current).map((s) => (
+                <a href={wikiPageHref(s)}>{s.title}</a>
+              ))}
+            </nav>
+          </details>
+        )}
+      </div>
+      <a href={wikiPageHref(currentSet)} class="side-home">{currentSet.title}</a>
+    </>
+  ) : (
+    <>
+      <!-- 학습위키 목록 화면: 위키 이름만 보여 준다 -->
+      <a href="/wiki" class="side-home">학습위키</a>
+      <nav class="wiki-list">
+        {sets.map((s) => (
+          <a href={wikiPageHref(s)} class="wiki-item">{s.title}</a>
+        ))}
+      </nav>
+    </>
+  )}
 
   {roadmap.map((r) => (
     <a href={`/wiki/${r.slug}`} class:list={['road', { active: r.slug === activeSlug }]}>
@@ -48,9 +82,66 @@ const { roadmap, weeks } = await getWikiGrouped();
     font-weight: 700;
     font-size: 1rem;
     text-decoration: none;
-    margin-bottom: 1rem;
+    margin-bottom: 0.9rem;
     color: var(--fg);
   }
+  .side-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.6rem;
+    font-size: 0.78rem;
+  }
+  .up { color: var(--muted); text-decoration: none; }
+  .up:hover { color: var(--fg); }
+  .switch { position: relative; }
+  .switch summary {
+    list-style: none;
+    cursor: pointer;
+    color: var(--muted);
+    padding: 0.15rem 0.5rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .switch summary::-webkit-details-marker { display: none; }
+  .switch summary:hover, .switch[open] summary { color: var(--fg); border-color: var(--muted); }
+  .switch-list {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.3rem);
+    z-index: 20;
+    min-width: 180px;
+    display: flex;
+    flex-direction: column;
+    padding: 0.35rem;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  }
+  .switch-list a {
+    text-decoration: none;
+    color: var(--fg);
+    padding: 0.35rem 0.55rem;
+    border-radius: 6px;
+    font-size: 0.84rem;
+  }
+  .switch-list a:hover { background: var(--surface); }
+  .wiki-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+  .wiki-item {
+    display: block;
+    text-decoration: none;
+    color: var(--fg);
+    padding: 0.3rem 0.5rem;
+    border-radius: 6px;
+  }
+  .wiki-item:hover { background: var(--surface); }
   .road {
     display: block;
     text-decoration: none;

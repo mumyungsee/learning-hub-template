@@ -90,6 +90,30 @@ try {
   problems.push('.gitignore 가 없어요 — 개인 학습일지가 저장소에 올라갑니다');
 }
 
+// ⑥ 스킬(설명서) 점검 — Codex는 .agents/skills/ 를 읽는다. 각 스킬은 폴더 + SKILL.md(맨 위 name·description).
+//    .claude/skills/ 는 다른 도구용 같은 내용. 두 곳이 어긋나면 알려만 준다.
+{
+  const skillFiles = (base) => walk(join(ROOT, base))
+    .filter((p) => p.endsWith('SKILL.md'))
+    .map((p) => rel(p).slice(base.length + 1));
+  const agentSkills = skillFiles('.agents/skills');
+  const claudeSkills = skillFiles('.claude/skills');
+  if (agentSkills.length === 0) {
+    notes.push('.agents/skills/ 에 스킬이 없어요 — Codex 스킬 목록에 설명서가 안 보여요');
+  }
+  for (const s of agentSkills) {
+    const t = readFileSync(join(ROOT, '.agents/skills', s), 'utf-8');
+    const head = t.startsWith('---') ? t.split('---')[1] ?? '' : '';
+    if (!/^name:\s*\S/m.test(head) || !/^description:\s*\S/m.test(head)) {
+      problems.push(`.agents/skills/${s} — 맨 위에 name 과 description 이 있어야 Codex가 알아봐요`);
+    }
+    if (claudeSkills.includes(s)) {
+      const other = readFileSync(join(ROOT, '.claude/skills', s), 'utf-8');
+      if (other !== t) notes.push(`스킬 ${s} — .agents/skills 와 .claude/skills 내용이 달라요. 한쪽만 고쳤나요?`);
+    }
+  }
+}
+
 // ─── 출력 ──────────────────────────────────────────────────────────
 console.log(`\n화면 파일 ${screens.length}개 확인했어요.\n`);
 

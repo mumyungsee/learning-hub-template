@@ -1,7 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
 import Prose from '../../components/Prose.astro';
-import { getProjects, getCasesOf } from '../../lib/content';
+import { getProjects, getCasesOf, getWikiSetsOfProject } from '../../lib/content';
 
 export async function getStaticPaths() {
   const projects = await getProjects();
@@ -11,6 +11,7 @@ export async function getStaticPaths() {
 const { entry } = Astro.props;
 const { Content } = await entry.render();
 const cases = await getCasesOf(entry.slug);
+const wikis = await getWikiSetsOfProject(entry.slug);
 const fmt = (d: Date) => d.toISOString().slice(0, 10);
 const 완성 = entry.data.status === '완성';
 ---
@@ -39,27 +40,30 @@ const 완성 = entry.data.status === '완성';
     <Content />
   </Prose>
 
-  <!-- 이 프로젝트의 책 — 같은 글을 책 순서로 읽는 다른 뷰 -->
-  <a class="book-link" href={`/ebook/${entry.slug}`}>
-    <span class="icon">📖</span>
-    <span class="txt">
-      <strong>이 프로젝트의 책 읽기</strong>
-      <span class="sub">
-        {cases.length > 0
-          ? `아래 기록 ${cases.length}꼭지가 한 권으로 이어져요`
-          : '아직 비어 있어요. 사례글을 쓰면 한 꼭지씩 쌓여요'}
-      </span>
-    </span>
-    <span class="arrow">→</span>
-  </a>
-
-  {!entry.data.책 && (
+  <section class="wikis">
+    <h2>이 프로젝트의 위키 · 전자책</h2>
+    {wikis.length === 0 ? (
+      <p class="shelf-hint">아직 이 프로젝트의 위키가 없어요.</p>
+    ) : (
+      <ul>
+        {wikis.map((w) => (
+          <li>
+            <a href={`/wikis/${w.slug}`}>
+              <strong>{w.title}</strong>
+              {w.summary && <span class="sub"> — {w.summary}</span>}
+            </a>
+            <a class="book" href={`/ebook/${w.slug}`}>책으로 보기 →</a>
+          </li>
+        ))}
+      </ul>
+    )}
     <p class="shelf-hint">
-      이 책은 아직 <strong>서재에 안 꽂혀 있어요.</strong>
-      낼 만큼 쌓였다 싶으면 카드 맨 위에 <code>책: true</code>를 넣으면 책장에 올라가요.
-      (언제든 다시 끌 수 있고, 꺼도 아래 기록은 그대로예요)
+      프로젝트 카드를 만들면 위키와 전자책이 같이 생겨요.
+      글 맨 위에 <code>프로젝트: {entry.slug}</code>를 적으면 이 위키에 모여요.
+      제목을 바꾸거나, 프로젝트와 상관없는 위키를 더 만들 때만
+      <code>src/content/wikis/</code>에 파일을 추가하면 돼요.
     </p>
-  )}
+  </section>
 
   <!-- 이 프로젝트에 엮인 사례글 연재 -->
   {cases.length > 0 && (
@@ -132,4 +136,17 @@ const 완성 = entry.data.status === '완성';
   .series .body { display: flex; flex-direction: column; }
   .series .summary { color: var(--muted); font-size: 0.9rem; }
   .series .date { font-size: 0.78rem; color: var(--muted); margin-top: 0.2rem; }
+
+  .wikis { margin: 2rem 0; }
+  .wikis h2 { font-size: 1.25rem; margin: 0 0 0.8rem; }
+  .wikis ul { list-style: none; margin: 0; padding: 0; }
+  .wikis li {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
+    padding: 0.7rem 0; border-bottom: 1px solid var(--line);
+  }
+  .wikis a { text-decoration: none; color: inherit; }
+  .wikis .sub { color: var(--muted); font-size: 0.88rem; }
+  .wikis .book { font-size: 0.85rem; white-space: nowrap; color: var(--fg); }
+  /* 위키 목록 밑 안내는 위로 끌어올리지 않는다 (목록 줄과 겹쳐 보였음) */
+  .wikis .shelf-hint { margin: 0.8rem 0 0; }
 </style>
