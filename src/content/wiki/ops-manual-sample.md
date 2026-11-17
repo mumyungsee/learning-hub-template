@@ -4,7 +4,6 @@ date: 2026-11-17
 summary: 운영 메모 위키의 견본 글이에요.
 종류: 사례
 주차: 1
-프로젝트: my-first-project
 위키: ops-manual
 공개: true
 tags: ["견본"]
